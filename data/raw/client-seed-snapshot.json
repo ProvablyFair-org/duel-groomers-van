@@ -1,0 +1,9 @@
+{
+  "success": true,
+  "data": {
+    "client_seed": "pfaudit_bj_seed01",
+    "server_seed_hashed": "5b612938a7adb84d630426cee19f0bb30db718eeae7f07781f3b843152e4ff0e",
+    "next_server_seed_hash": "26edec84e8db045b5ab390ffe3b04583eb91953fa47243ca656eab8f984d14b9",
+    "nonce": 46
+  }
+}

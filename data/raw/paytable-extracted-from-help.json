@@ -1,0 +1,90 @@
+{
+  "_extraction": {
+    "source": "in-game help/rules panel — DOM HTML pasted by Paulo from live tab",
+    "captured_at": "2026-05-06",
+    "tabs_captured": ["Rules", "Symbols → Base game", "Symbols → Bonus game"],
+    "notes": [
+      "Numbers in the UI use comma as decimal separator (e.g. '0,7x'); converted to '.' here.",
+      "Cluster size tiers: 8, 9, 10, 11, 12+ (any cluster size >= 12 pays the 12+ tier).",
+      "Symbol paytable is IDENTICAL between base and bonus games for symbols 1-9, wild, and bonus (scatter pay).",
+      "Bonus game adds a 12th card: Multiplier (tumble_multiplier symbol with weighted multiplier values).",
+      "Bonus symbol behaviour differs by mode:",
+      "  - Base game: 3/4/5/6 scatters trigger 8/10/12/14 free spins (initial bonus award).",
+      "  - Bonus game: 3/4/5/6 scatters retrigger 3/5/8/10 ADDITIONAL respins (up to 3 retriggers per bonus).",
+      "Wild substitutes for any symbol except Bonus; no standalone payout.",
+      "Multiplier symbol UI percentages cross-check exactly against /api/v2/slots weights (weight/200 = UI %)."
+    ]
+  },
+  "rules_tab": {
+    "symbols_pay": "Anywhere",
+    "free_spins": "Yes — triggered by 3+ scatter symbols. In the bonus game, landing bonus symbols can retrigger extra bonus rounds, up to 3 times per bonus game.",
+    "bonus_buys": "Yes — first spin of a bought bonus game is purely cosmetic and does not produce clusters or wins. It shows a guaranteed bonus, so this initial spin isn't verifiable through the Provably Fair system.",
+    "tumbling": "Yes — winning symbols disappear, symbols above drop down, new symbols drop in from the top. Continues while new wins land OR until max multiplier is reached.",
+    "wilds": "Yes — wild substitutes for any symbol except Bonus and contributes to every cluster win.",
+    "multipliers": "Bonus game only. When tumbling stops, all multiplier symbols on screen are summed and applied to that tumble round's total win.",
+    "rtp_base_game": "100%",
+    "rtp_bonus_game": "100%",
+    "max_multi": "5000x"
+  },
+  "tier_breakpoints": [8, 9, 10, 11, 12],
+  "base_game": {
+    "symbols": {
+      "symbol_1": { "type": "common",  "tiers": { "8": 0.4, "9": 0.4, "10": 0.6, "11": 0.7,  "12+": 2.0 } },
+      "symbol_2": { "type": "common",  "tiers": { "8": 0.5, "9": 0.6, "10": 0.7, "11": 1.0,  "12+": 2.5 } },
+      "symbol_3": { "type": "common",  "tiers": { "8": 0.6, "9": 0.7, "10": 0.9, "11": 1.2,  "12+": 3.0 } },
+      "symbol_4": { "type": "common",  "tiers": { "8": 0.7, "9": 0.9, "10": 1.2, "11": 1.5,  "12+": 4.0 } },
+      "symbol_5": { "type": "rare",    "tiers": { "8": 1.0, "9": 1.2, "10": 1.5, "11": 2.0,  "12+": 5.0 } },
+      "symbol_6": { "type": "rare",    "tiers": { "8": 1.5, "9": 1.6, "10": 2.2, "11": 2.8,  "12+": 7.0 } },
+      "symbol_7": { "type": "rare",    "tiers": { "8": 1.8, "9": 2.2, "10": 2.8, "11": 3.5,  "12+": 9.0 } },
+      "symbol_8": { "type": "epic",    "tiers": { "8": 2.5, "9": 3.5, "10": 4.5, "11": 5.5,  "12+": 14.0 } },
+      "symbol_9": { "type": "premium", "tiers": { "8": 5.0, "9": 6.0, "10": 8.0, "11": 10.0, "12+": 25.0 } },
+      "wild":     { "type": "wild",    "tiers": null, "note": "Substitutes for any symbol except Bonus; contributes to every cluster win. No standalone payout." },
+      "bonus":    {
+        "type": "scatter",
+        "scatter_pay":         { "4": 3.0, "5": 5.0, "6+": 100.0 },
+        "free_spins_award":    { "3": 8,   "4": 10,  "5": 12, "6": 14 }
+      }
+    }
+  },
+  "bonus_game": {
+    "symbols": {
+      "symbol_1": { "type": "common",  "tiers": { "8": 0.4, "9": 0.4, "10": 0.6, "11": 0.7,  "12+": 2.0 } },
+      "symbol_2": { "type": "common",  "tiers": { "8": 0.5, "9": 0.6, "10": 0.7, "11": 1.0,  "12+": 2.5 } },
+      "symbol_3": { "type": "common",  "tiers": { "8": 0.6, "9": 0.7, "10": 0.9, "11": 1.2,  "12+": 3.0 } },
+      "symbol_4": { "type": "common",  "tiers": { "8": 0.7, "9": 0.9, "10": 1.2, "11": 1.5,  "12+": 4.0 } },
+      "symbol_5": { "type": "rare",    "tiers": { "8": 1.0, "9": 1.2, "10": 1.5, "11": 2.0,  "12+": 5.0 } },
+      "symbol_6": { "type": "rare",    "tiers": { "8": 1.5, "9": 1.6, "10": 2.2, "11": 2.8,  "12+": 7.0 } },
+      "symbol_7": { "type": "rare",    "tiers": { "8": 1.8, "9": 2.2, "10": 2.8, "11": 3.5,  "12+": 9.0 } },
+      "symbol_8": { "type": "epic",    "tiers": { "8": 2.5, "9": 3.5, "10": 4.5, "11": 5.5,  "12+": 14.0 } },
+      "symbol_9": { "type": "premium", "tiers": { "8": 5.0, "9": 6.0, "10": 8.0, "11": 10.0, "12+": 25.0 } },
+      "wild":     { "type": "wild",    "tiers": null, "note": "Substitutes for any symbol except Bonus; contributes to every cluster win. No standalone payout." },
+      "multiplier": {
+        "type": "tumble_multiplier",
+        "ui_distribution_percent": {
+          "2x": 45.0, "3x": 12.5, "4x": 9.0, "5x": 6.5, "6x": 5.0,
+          "7x": 4.0, "8x": 3.5, "10x": 3.0, "12x": 2.5, "15x": 2.0,
+          "25x": 2.0, "50x": 2.0, "100x": 1.5, "250x": 1.5
+        },
+        "api_weights_for_cross_check": {
+          "2x": 90, "3x": 25, "4x": 18, "5x": 13, "6x": 10,
+          "7x": 8, "8x": 7, "10x": 6, "12x": 5, "15x": 4,
+          "25x": 4, "50x": 4, "100x": 3, "250x": 3,
+          "_total_weight": 200,
+          "_normalised_match_ui_percent": true
+        },
+        "note": "Sticky multiplier symbol that drops in during free spins. After tumbling settles, all multiplier values on screen are summed and applied to the tumble round's total win."
+      },
+      "bonus": {
+        "type": "scatter",
+        "scatter_pay":   { "4": 3.0, "5": 5.0, "6+": 100.0 },
+        "retrigger_award": { "3": 3, "4": 5, "5": 8, "6": 10 },
+        "max_retriggers_per_bonus": 3
+      }
+    }
+  },
+  "consistency_check": {
+    "multiplier_ui_vs_api": "ALL 14 entries match exactly when API weight is divided by total weight (200). Confirms /api/v2/slots weights and UI-displayed weights are the same source.",
+    "symbol_paytable_base_vs_bonus": "Symbols 1-9 paytable IDENTICAL across base and bonus modes. Bonus mode only adds the Multiplier sticky symbol and changes bonus-scatter behaviour from initial trigger (8/10/12/14 spins) to retrigger (3/5/8/10 respins).",
+    "implication_for_audit": "One paytable applies to all spins. Theoretical RTP can be computed from per-reel weights × this paytable plus the bonus contribution (multiplier expectation × scatter trigger probability × free-spin RTP)."
+  }
+}

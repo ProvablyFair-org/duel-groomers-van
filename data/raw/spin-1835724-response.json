@@ -1,0 +1,378 @@
+{
+  "success": true,
+  "data": {
+    "spin_id": 1835724,
+    "spin_type": "base_game",
+    "bet_amount": "0.200000",
+    "bet_amount_currency": "0.200046010582433900",
+    "balance_type": 105,
+    "total_win": "0",
+    "total_win_currency": "0",
+    "total_multiplier": "0",
+    "feature_triggered": false,
+    "respin_data": {
+      "respin_triggered": false,
+      "scatter_positions": null,
+      "awarded_spins": null
+    },
+    "rounds": [
+      {
+        "id": 0,
+        "type": "regular",
+        "data": {
+          "spin_multiplier": "0",
+          "view": [
+            [
+              {
+                "uuid": "a0497112-fa6e-43c2-a602-27edef993d59",
+                "id": 95131022,
+                "symbol": "symbol_7",
+                "index": 0,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 0,
+                "type": "rare",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "1a703236-d4f7-4df8-a138-31899dfaa36e",
+                "id": 95131023,
+                "symbol": "symbol_4",
+                "index": 1,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 1,
+                "type": "common",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "7740298c-6fd0-4b61-93ee-c29b44034c37",
+                "id": 95131024,
+                "symbol": "symbol_9",
+                "index": 2,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 2,
+                "type": "premium",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "d86568d1-48e7-4f35-8291-822d89644fda",
+                "id": 95131025,
+                "symbol": "symbol_3",
+                "index": 3,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 3,
+                "type": "common",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "66c9483c-4079-474a-910f-4d5e00ab0b2b",
+                "id": 95131026,
+                "symbol": "symbol_1",
+                "index": 4,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 4,
+                "type": "common",
+                "multiplier_value": null
+              }
+            ],
+            [
+              {
+                "uuid": "11d37b7c-9ec1-40e5-af0e-8acfc3fb4708",
+                "id": 95131027,
+                "symbol": "symbol_7",
+                "index": 0,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 5,
+                "type": "rare",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "fe7cb0b6-54f7-41fc-a205-caa61981206a",
+                "id": 95131028,
+                "symbol": "symbol_5",
+                "index": 1,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 6,
+                "type": "rare",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "bbc47bd8-2c48-4628-a54d-293e9800b4f3",
+                "id": 95131029,
+                "symbol": "symbol_9",
+                "index": 2,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 7,
+                "type": "premium",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "e1ebe2ac-d044-447e-a8a7-b5944a18695a",
+                "id": 95131030,
+                "symbol": "symbol_7",
+                "index": 3,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 8,
+                "type": "rare",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "717acbcb-fff5-44d9-b1ce-7dd973f9f8fd",
+                "id": 95131031,
+                "symbol": "symbol_4",
+                "index": 4,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 9,
+                "type": "common",
+                "multiplier_value": null
+              }
+            ],
+            [
+              {
+                "uuid": "fd376462-6dd6-4e2f-9a0c-413466714c26",
+                "id": 95131032,
+                "symbol": "symbol_2",
+                "index": 0,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 10,
+                "type": "common",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "6cd3f16b-6865-452a-85ca-8475d779c07a",
+                "id": 95131033,
+                "symbol": "symbol_7",
+                "index": 1,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 11,
+                "type": "rare",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "52c81811-13d8-4472-9c7d-20d995fa2532",
+                "id": 95131034,
+                "symbol": "symbol_3",
+                "index": 2,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 12,
+                "type": "common",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "21337543-c06f-462d-ba43-889f0bb5874d",
+                "id": 95131035,
+                "symbol": "symbol_9",
+                "index": 3,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 13,
+                "type": "premium",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "b9f120b7-84b5-415c-9788-6de6604bd125",
+                "id": 95131036,
+                "symbol": "symbol_8",
+                "index": 4,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 14,
+                "type": "epic",
+                "multiplier_value": null
+              }
+            ],
+            [
+              {
+                "uuid": "1eea57e1-9d7e-44c2-8c19-019ec173a5f9",
+                "id": 95131037,
+                "symbol": "symbol_8",
+                "index": 0,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 15,
+                "type": "epic",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "a1cae8eb-84d4-4dbf-83ef-348af527ab01",
+                "id": 95131038,
+                "symbol": "symbol_5",
+                "index": 1,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 16,
+                "type": "rare",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "2ef0f7fe-9d58-41b4-a20e-f12f272ca57c",
+                "id": 95131039,
+                "symbol": "symbol_8",
+                "index": 2,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 17,
+                "type": "epic",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "0a5cfa46-a067-434b-9fb3-abedf41d014d",
+                "id": 95131040,
+                "symbol": "symbol_2",
+                "index": 3,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 18,
+                "type": "common",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "0293747c-b64e-4b39-b3e8-c4cf9659edbe",
+                "id": 95131041,
+                "symbol": "symbol_1",
+                "index": 4,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 19,
+                "type": "common",
+                "multiplier_value": null
+              }
+            ],
+            [
+              {
+                "uuid": "9e72d476-8add-4341-bec5-9afa670bffe5",
+                "id": 95131042,
+                "symbol": "symbol_9",
+                "index": 0,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 20,
+                "type": "premium",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "722db722-ec04-433c-8c89-e5dad716820b",
+                "id": 95131043,
+                "symbol": "symbol_4",
+                "index": 1,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 21,
+                "type": "common",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "8b68de9d-2924-4f95-9a16-e025a843fb22",
+                "id": 95131044,
+                "symbol": "symbol_4",
+                "index": 2,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 22,
+                "type": "common",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "9099e854-c696-4f05-9d95-18a90c7a9d3f",
+                "id": 95131045,
+                "symbol": "symbol_7",
+                "index": 3,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 23,
+                "type": "rare",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "4f9df811-ba8c-4be1-a569-11851c5a53dd",
+                "id": 95131046,
+                "symbol": "bonus",
+                "index": 4,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 24,
+                "type": "scatter",
+                "multiplier_value": null
+              }
+            ],
+            [
+              {
+                "uuid": "3793d8a5-7008-4cf7-884a-910d3f7696c7",
+                "id": 95131047,
+                "symbol": "symbol_1",
+                "index": 0,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 25,
+                "type": "common",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "daef1804-8ca2-48dc-8932-16db6824b611",
+                "id": 95131048,
+                "symbol": "symbol_6",
+                "index": 1,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 26,
+                "type": "rare",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "eb4c1930-616f-4877-81fa-2547e1fba48d",
+                "id": 95131049,
+                "symbol": "symbol_5",
+                "index": 2,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 27,
+                "type": "rare",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "47dc697a-719a-40df-9f1f-adcf7a74de2f",
+                "id": 95131050,
+                "symbol": "symbol_8",
+                "index": 3,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 28,
+                "type": "epic",
+                "multiplier_value": null
+              },
+              {
+                "uuid": "780e6a3e-0cda-4dc6-86aa-c350326e0cbd",
+                "id": 95131051,
+                "symbol": "symbol_2",
+                "index": 4,
+                "round": 0,
+                "removed_on_round": null,
+                "position": 29,
+                "type": "common",
+                "multiplier_value": null
+              }
+            ]
+          ],
+          "paylines": []
+        }
+      }
+    ],
+    "feature_status": null,
+    "max_win_reached": false,
+    "edge_multiplier": "1",
+    "amount_won_coins": "0",
+    "amount_won": "0"
+  }
+}

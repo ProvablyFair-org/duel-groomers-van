@@ -1,0 +1,4 @@
+spec: 'tests/**/*Tests.ts'
+require: 'ts-node/register'
+extension: ['ts']
+timeout: 30000

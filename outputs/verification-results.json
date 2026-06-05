@@ -1,0 +1,207 @@
+{
+  "generatedAt": "2026-06-10T12:19:19.460Z",
+  "totalBets": 6225,
+  "totalSeeds": 117,
+  "revealedSeeds": 116,
+  "steps": [
+    {
+      "step": 1,
+      "name": "Seed Hash Integrity",
+      "status": "PASS",
+      "detail": "116/116 revealed seeds: SHA-256(hex_decode(server_seed)) matches the committed hash. 0 failures."
+    },
+    {
+      "step": 2,
+      "name": "Commitment Linkage",
+      "status": "PASS",
+      "detail": "116/116 consecutive seed links verified. 0 broken."
+    },
+    {
+      "step": 3,
+      "name": "Hash Consistency Within Epoch",
+      "status": "PASS",
+      "detail": "116/116 epochs internally consistent. 0 inconsistent."
+    },
+    {
+      "step": 4,
+      "name": "Nonce Audit",
+      "status": "PASS",
+      "detail": "112/116 epochs have a clean 0..N-1 nonce sequence. 4 epochs contain capture-retry gaps (4 nonce gaps observed; for each, the seed is revealed and the missing nonce is unused, but the missing completed rounds are not themselves reconstructed/verified). 0 epochs have unverifiable gaps. Examples: epoch d6bebb438befe8fb: nonce 48 unused; seed revealed (missing round itself not reconstructed/verified) | epoch 22f48a0f53065c9c: nonce 3 unused; seed revealed (missing round itself not reconstructed/verified) | epoch 77544e55cb2fdf56: nonce 23 unused; seed revealed (missing round itself not reconstructed/verified)"
+    },
+    {
+      "step": 5,
+      "name": "Outcome Recomputation",
+      "status": "PASS",
+      "detail": "6205/6205 bets reproduce 30/30 cells from (server_seed, client_seed, nonce, round_index). 6202 matched at recorded nonce; 3 matched at recorded ±1 — disclosed capture-retry artefacts. 0 unverifiable. Skipped: 0 (seed not revealed), 0 (pf_skipped=true, operator-disclosed cosmetic), 20 (buy spins — server-canned to guarantee scatters, not in published RNG)."
+    },
+    {
+      "step": 6,
+      "name": "Client Seed Influence",
+      "status": "PASS",
+      "detail": "100/100 sampled bets produce a different outcome_index when the client seed is tampered. PASS criterion: ≥ 95/100 (≥ 95%)."
+    },
+    {
+      "step": 7,
+      "name": "Payout Math",
+      "status": "PASS",
+      "detail": "6205/6205 non-buy bets reconcile sum(payline payouts × max(bomb_multiplier, 1)) = amount_won_coins (±max(0.000001, 0.05%)). 0 mismatched."
+    },
+    {
+      "step": 8,
+      "name": "Multiplier Provenance",
+      "status": "PASS",
+      "detail": "4985/4985 payline multipliers match the published paytable (cluster-pays for 11-symbol base + 12-symbol bonus). 0 mismatched."
+    },
+    {
+      "step": 9,
+      "name": "Bet-Size Invariance",
+      "status": "PASS",
+      "detail": "30/30 Phase B bets recompute byte-equal cells from (server_seed, client_seed, nonce). Stakes spanned: $1.000000000000000000, 5.000000000000000000, 9.500000000000000000, 18.500000000000000000, 27.500000000000000000, 50.000000000000000000. Stake is not an HMAC input — same seed → same grid regardless of stake."
+    },
+    {
+      "step": 10,
+      "name": "House Edge Audit (Zero Edge consistency)",
+      "status": "PASS",
+      "detail": "6225/6225 bets have edge_multiplier = 1 (Zero Edge active). 0 deviations. Distinct stakes observed: 8. Stakes spanned 0.200000000000000000–50.000000000000000000. (Scaling-edge brackets > 1 are disclosed as R-BRACKET-EMPIRICAL in the audit report — they are verified analytically from the published schedule but not exercised at a Zero-Edge audit account.)"
+    },
+    {
+      "step": 11,
+      "name": "Config Completeness",
+      "status": "PASS",
+      "detail": "Required config fields: 6/6 present. Paytable: base_game 11 symbols, bonus_game 12 symbols."
+    },
+    {
+      "step": 12,
+      "name": "Epoch Size",
+      "status": "PASS",
+      "detail": "116 epochs. Regular-bet size range: 20–50. Cap: 50. Over-cap: 0; under-50 (closing-out epochs): 2."
+    },
+    {
+      "step": 13,
+      "name": "Phase Labels",
+      "status": "PASS",
+      "detail": "Phases present: A, B, C, D, E. Missing: none. Extra: none."
+    },
+    {
+      "step": 14,
+      "name": "Dataset Hash",
+      "status": "PASS",
+      "detail": "Actual SHA-256: 3034cb1284bc1a87d82a0d8f914b19d7f1a8f16894ffe601242bd29e3873b967. Expected: 3034cb1284bc1a87d82a0d8f914b19d7f1a8f16894ffe601242bd29e3873b967. Match."
+    },
+    {
+      "step": 15,
+      "name": "Phase D Client Seed Variation",
+      "status": "PASS",
+      "detail": "524 Phase D entries (incl. free spins). 500 regular bets across 10 unique client seeds (expected 10 × 50)."
+    },
+    {
+      "step": 16,
+      "name": "Anti-Circularity",
+      "status": "PASS",
+      "detail": "Monte Carlo cross-check of the exact-enumerated headline RTP (99.9720%, Step 32). Independent 30,000,000-spin Monte Carlo: base RTP 56.13% per spin + bonus contribution (trigger probability 0.4407% × avg session 99.6647× stake across 132,222 integrated trigger+session bonus sessions) → 100.06% blended. MC std error on blended RTP at this sample size is ~0.3pp (bonus heavy-tail dominated); the cross-check agrees with the enumerated value within sampling noise. Both estimates computed from operator's published per-reel weights, paytable, and cascade algorithm — no operator-supplied probability table. Pass-1 simulator uses the same gravity-fill cascade independently validated byte-exact against captured data in Step 28."
+    },
+    {
+      "step": 17,
+      "name": "Simulation Pass 1",
+      "status": "PASS",
+      "detail": "Per-reel chi-squared (Bonferroni α=0.0017): 0/6 fails. reel 0: χ²=8.63, p=0.5672; reel 1: χ²=7.08, p=0.7176; reel 2: χ²=5.82, p=0.8300; reel 3: χ²=9.39, p=0.4956; reel 4: χ²=10.95, p=0.3613; reel 5: χ²=4.94, p=0.8954. Serial independence (n=100k payouts): lag-1 |z|=0.57 (threshold 3.14), runs p=0.9666 (threshold 0.0017). All checks within FWER-corrected thresholds."
+    },
+    {
+      "step": 18,
+      "name": "Pass 2 Cherry-Pick Detection",
+      "status": "PASS",
+      "detail": "Forward-replay across 115 committed server seeds × 10,000 nonces (1,150,000 simulated outcomes). Each seed's early window (nonces 0..49) and late window (50..9999) chi-squared (1 d.o.f., win/no-win) against the exact enumerated win rate 45.58% from outputs/base-2pow32.json. Cherry-pick signature: early p<0.05 AND late p≥0.05. Flags: 4/115 (~6 expected by chance at 5% per-seed false-positive rate). Binomial P(X ≥ 4 | n=115, p=0.05) = 0.8321 → PASS (threshold p ≥ 0.01)."
+    },
+    {
+      "step": 19,
+      "name": "Cluster Pays Anywhere",
+      "status": "PASS",
+      "detail": "4982/4982 cluster paylines have count = (cells of symbol) + (cells of wild). Confirms the \"anywhere with wild substitution\" rule."
+    },
+    {
+      "step": 20,
+      "name": "Tumble Cascade Structural Integrity",
+      "status": "PASS",
+      "detail": "4323/4323 cascade rounds preserve un-removed cells at the bottom of their column (gravity rule). 0 gravity violations. Per-cell RNG verification of NEW drop-fill cells: covered byte-exactly by Step 28 (Cascade RNG Byte-Exact Replay) — R-CASCADE-RNG closed."
+    },
+    {
+      "step": 21,
+      "name": "Wild Substitution Rule",
+      "status": "PASS",
+      "detail": "410 captured spins have ≥ 2 simultaneous payable-symbol clusters AND a shared wild contributing to all of them. Confirms the help panel rule \"wilds contribute to every cluster win\" — a single wild lifts multiple symbols simultaneously. Examples: bet 1964428: symbol_1+symbol_7 share 1 wild(s) | bet 1964469: symbol_4+symbol_2 share 2 wild(s) | bet 1964539: symbol_3+symbol_2 share 3 wild(s)"
+    },
+    {
+      "step": 22,
+      "name": "Bonus Trigger",
+      "status": "PASS",
+      "detail": "53 captured trigger events. 53/53 match the published spins_per_scatters table {3→8, 4→10, 5→12, 6→14}. Independent grid cross-check: 53/53 captured triggers have a final-grid scatter count matching the operator-reported trigger_data.scatter_count (catches dual-field inflation)."
+    },
+    {
+      "step": 23,
+      "name": "Retrigger Behaviour",
+      "status": "PASS",
+      "detail": "53 bonus sessions captured. 1 retrigger events observed (free spins in which the cumulative scatter count across all cascades reached ≥ 3). Per-session retrigger cap = 3 (operator config). 0 sessions exceeded the cap. Examples: bet 1987998: 3 scatters in final cascade view (retrigger)"
+    },
+    {
+      "step": 24,
+      "name": "Cosmetic Buy-Spin Disclosure",
+      "status": "PASS",
+      "detail": "20 buy bets captured. 20/20 carry the operator's bonus-buy disclosure (verifyData._verify_session.is_bonus_buy=true) AND have no cluster paylines (only the guaranteed 4-scatter scatter pay; cosmetic grid never forms clusters, per operator disclosure)."
+    },
+    {
+      "step": 25,
+      "name": "Buy-Bonus Structure",
+      "status": "PASS",
+      "detail": "20 buys captured. 20/20 display exactly 4 scatters (per buy_scatter_count=4). 20/20 award exactly 10 free spins (per spins_per_scatters[4]=10)."
+    },
+    {
+      "step": 26,
+      "name": "Free-Spin Payout Reconciliation",
+      "status": "PASS",
+      "detail": "475/475 captured free spins reconcile their amount_won to sum(base_payout × max(bomb_multiplier, 1)) across paylines. 0 mismatched."
+    },
+    {
+      "step": 27,
+      "name": "Bonus Multiplier Symbol",
+      "status": "PASS",
+      "detail": "Multiplier symbol appearances: 935 in bonus_game (expected), 0 in base_game (must be 0). Observed multiplier values across all bonus spins: {2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 25, 50, 100, 250}. Published values: {2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 25, 50, 100, 250}. Mode separation confirms multiplier_bombs_applies_to: 'feature' rule."
+    },
+    {
+      "step": 28,
+      "name": "Cascade RNG Byte-Exact Replay",
+      "status": "PASS",
+      "detail": "4323 captured cascades replayed via deriveTumbleSeed(outcome_index, round_index, tumble_index) → fresh PCG32 → generateGrid + gravity-fill. 129690/129690 cells reproduce byte-exact. 146/146 newly-generated cascade multiplier cells byte-exact; all multiplier-symbol values across the dataset lie within the published set and payouts reconcile (Step 7). 2974 spins exercised; 20 skipped (buys / no outcome_index). Closes R-CASCADE-RNG."
+    },
+    {
+      "step": 29,
+      "name": "Base 2³² artifact integrity",
+      "status": "PASS",
+      "detail": "SHA-256 matches pinned hash (0b890eef7153fcdf…)"
+    },
+    {
+      "step": 30,
+      "name": "Bonus 2³² artifact integrity",
+      "status": "PASS",
+      "detail": "SHA-256 matches pinned hash (e878256256cf59ed…)"
+    },
+    {
+      "step": 31,
+      "name": "Session-EV artifact integrity",
+      "status": "PASS",
+      "detail": "all 4 exact session artifacts (initial_spins 8/10/12/14) match pinned SHA-256"
+    },
+    {
+      "step": 32,
+      "name": "Headline game RTP derivation",
+      "status": "PASS",
+      "detail": "base RTP=0.561376, P(trigger)=0.00440420 (1/227.1), E[session|trig]=99.5286, total RTP = 0.999720 = 99.9720%  (operator claim 100%, deviation 0.0280%)"
+    }
+  ],
+  "summary": {
+    "passed": 32,
+    "flags": 0,
+    "failed": 0,
+    "info": 0,
+    "verdict": "PROVABLY FAIR — Full Pass"
+  }
+}

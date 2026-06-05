@@ -1,0 +1,22 @@
+node_modules/
+dist/
+outputs/*.json
+!outputs/.gitkeep
+!outputs/rtp-convergence.html
+results/*.json
+!results/.gitkeep
+results/merged/*.json
+!results/merged/.gitkeep
+working-notes/
+.DS_Store
+*.log
+*.har
+data/duel.com.har
+data/raw/smoke/
+# only the .gz form of the dataset is committed (raw JSON is 334 MB,
+# compresses to 24 MB; loader.ts reads either transparently)
+data/*.json
+!data/raw/*.json
+# old smoke variants — only the final one ships
+data/groomers-van-smoke-test-1778099*.json
+data/smoke-3-*.json

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DUEL.COM GROOMER'S VAN RTP CONVERGENCE — 30M BASE SPINS</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fafafa; padding: 24px; }
+  .container { max-width: 1100px; margin: 0 auto; background: #fff; border-radius: 12px; border: 1px solid #e0e0e0; padding: 32px; }
+  h1 { text-align: center; font-size: 16px; font-weight: 600; color: #333; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+  .subtitle { text-align: center; font-size: 12px; color: #888; margin-bottom: 24px; }
+  .chart-wrap { position: relative; height: 420px; }
+  .legend { text-align: center; margin-top: 12px; font-size: 13px; color: #666; }
+  .legend span { margin: 0 12px; }
+  .legend .dot { display: inline-block; width: 12px; height: 3px; vertical-align: middle; margin-right: 4px; }
+  .summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 20px; }
+  .stat { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; text-align: center; }
+  .stat .label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat .value { font-size: 18px; font-weight: 700; color: #333; margin-top: 4px; }
+  .stat.final { border: 2px solid #4caf50; }
+  .stat.final .value { color: #2e7d32; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>DUEL.COM GROOMER'S VAN RTP CONVERGENCE — 30M BASE SPINS</h1>
+  <div class="subtitle">Integrated trigger + session blended RTP — single PCG32 stream from pinned master seed</div>
+  <div class="chart-wrap"><canvas id="chart"></canvas></div>
+  <div class="legend">
+    <span><span class="dot" style="background:#1565c0;height:3px"></span> Cumulative blended RTP</span>
+    <span><span class="dot" style="background:#e57373;border-top:2px dashed #e57373;height:0"></span> Theoretical (100.0000%)</span>
+  </div>
+  <div class="summary">
+    <div class="stat"><div class="label">Base RTP</div><div class="value">56.1324%</div></div>
+    <div class="stat"><div class="label">Trigger Prob</div><div class="value">0.4407%</div></div>
+    <div class="stat"><div class="label">Avg Session Payout</div><div class="value">99.6647×</div></div>
+    <div class="stat final"><div class="label">Final Blended RTP</div><div class="value">100.0586%</div></div>
+    <div class="stat"><div class="label">Theoretical</div><div class="value">100.0000%</div></div>
+  </div>
+</div>
+<script>
+const data = [{"rounds":1000,"rtp":0.9025999999999992},{"rounds":5000,"rtp":1.0281000000000005},{"rounds":10000,"rtp":0.9541399999999949},{"rounds":50000,"rtp":1.030418000000034},{"rounds":100000,"rtp":0.9985299999999948},{"rounds":500000,"rtp":1.00732780000013},{"rounds":1000000,"rtp":1.0170671000005325},{"rounds":5000000,"rtp":1.0150359199991963},{"rounds":10000000,"rtp":1.0065141300058056},{"rounds":30000000,"rtp":1.0005857766624702}];
+const labels = data.map(d => {
+  const m = d.rounds / 1e6;
+  if (m >= 1) return m % 1 === 0 ? m.toFixed(0) + 'M' : m.toFixed(1) + 'M';
+  return (d.rounds / 1e3).toFixed(0) + 'K';
+});
+const rtps = data.map(d => d.rtp * 100);
+const theoretical = 100;
+
+new Chart(document.getElementById('chart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [
+      {
+        label: 'Theoretical (' + theoretical.toFixed(4) + '%)',
+        data: rtps.map(() => theoretical),
+        borderColor: '#e57373',
+        borderWidth: 2,
+        borderDash: [8, 4],
+        fill: false,
+        pointRadius: 0,
+      },
+      {
+        label: 'Cumulative blended RTP',
+        data: rtps,
+        borderColor: '#1565c0',
+        borderWidth: 2.5,
+        fill: false,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        pointBackgroundColor: '#1565c0',
+        tension: 0.3,
+      },
+      {
+        label: 'Final',
+        data: rtps.map((v, i) => i === rtps.length - 1 ? v : null),
+        borderColor: '#1565c0',
+        backgroundColor: '#1565c0',
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        showLine: false,
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: (items) => labels[items[0].dataIndex] + ' base spins',
+          label: (item) => {
+            if (item.datasetIndex === 1) return 'Blended RTP: ' + item.parsed.y.toFixed(4) + '%';
+            if (item.datasetIndex === 0) return 'Theoretical: ' + theoretical.toFixed(4) + '%';
+            return null;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        title: { display: true, text: 'Base Spins Simulated', font: { size: 12 }, color: '#666' },
+        ticks: { color: '#666', maxTicksLimit: 10 },
+        grid: { color: '#e0e0e0' },
+      },
+      y: {
+        title: { display: false },
+        ticks: { color: '#666', callback: v => v.toFixed(1) + '%' },
+        grid: { color: '#e0e0e0' },
+      },
+    },
+  },
+});
+</script>
+</body>
+</html>

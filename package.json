@@ -1,0 +1,33 @@
+{
+  "name": "groomers-van-audit",
+  "version": "1.0.0",
+  "description": "Provably fair audit — Duel.com Groomer's Van slot",
+  "scripts": {
+    "test": "mocha && npm run verify",
+    "verify": "ts-node tests/verify.ts",
+    "simulate": "ts-node src/simulate.ts",
+    "enumerate": "ts-node src/enumerate-mt.ts --condition base --workers $(node -e \"console.log(require('os').cpus().length)\")",
+    "enumerate:bonus": "ts-node src/enumerate-mt.ts --condition bonus --workers $(node -e \"console.log(require('os').cpus().length)\")",
+    "enumerate:both": "npm run enumerate && npm run enumerate:bonus",
+    "enumerate:cpu:base":  "ts-node src/enumerate-mt.ts --condition base  --out outputs/cpu-base-2pow32.json  --workers $(node -e \"console.log(require('os').cpus().length)\")",
+    "enumerate:cpu:bonus": "ts-node src/enumerate-mt.ts --condition bonus --out outputs/cpu-bonus-2pow32.json --workers $(node -e \"console.log(require('os').cpus().length)\")",
+    "enumerate:cpu:both":  "npm run enumerate:cpu:base && npm run enumerate:cpu:bonus",
+    "parity:base":  "ts-node scripts/cpu-cuda-parity.ts --condition base",
+    "parity:bonus": "ts-node scripts/cpu-cuda-parity.ts --condition bonus",
+    "enumerate:cuda": "bash scripts/run-cuda.sh",
+    "enumerate:cuda:build": "bash scripts/build-cuda.sh",
+    "session-ev": "ts-node src/session-ev.ts --in outputs/bonus-2pow32.json --out outputs/bonus-session-ev.json",
+    "session-ev-exact":    "ts-node src/session-ev-exact.ts --in outputs/bonus-2pow32.json --out outputs/bonus-session-ev-exact-10.json --granularity 0.05 --initial-spins 10",
+    "session-ev-exact:8":  "ts-node src/session-ev-exact.ts --in outputs/bonus-2pow32.json --out outputs/bonus-session-ev-exact-8.json  --granularity 0.05 --initial-spins 8",
+    "session-ev-exact:10": "ts-node src/session-ev-exact.ts --in outputs/bonus-2pow32.json --out outputs/bonus-session-ev-exact-10.json --granularity 0.05 --initial-spins 10",
+    "session-ev-exact:12": "ts-node src/session-ev-exact.ts --in outputs/bonus-2pow32.json --out outputs/bonus-session-ev-exact-12.json --granularity 0.05 --initial-spins 12",
+    "session-ev-exact:14": "ts-node src/session-ev-exact.ts --in outputs/bonus-2pow32.json --out outputs/bonus-session-ev-exact-14.json --granularity 0.05 --initial-spins 14"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10",
+    "@types/node": "^22",
+    "mocha": "^11",
+    "ts-node": "^10",
+    "typescript": "^5"
+  }
+}
