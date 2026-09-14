@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-10T12:19:19.460Z",
+  "generatedAt": "2026-09-14T19:52:27.258Z",
   "totalBets": 6225,
   "totalSeeds": 117,
   "revealedSeeds": 116,
@@ -195,10 +195,16 @@
       "name": "Headline game RTP derivation",
       "status": "PASS",
       "detail": "base RTP=0.561376, P(trigger)=0.00440420 (1/227.1), E[session|trig]=99.5286, total RTP = 0.999720 = 99.9720%  (operator claim 100%, deviation 0.0280%)"
+    },
+    {
+      "step": 33,
+      "name": "Artifact Integrity (pinned artifacts of record)",
+      "status": "PASS",
+      "detail": "12 artifact(s) checked against src/artifact-pins.ts; base-2pow32.json matches its pin; bonus-2pow32-uncapped.json matches its pin; bonus-2pow32.json matches its pin; bonus-session-ev-exact-10.json matches its pin; bonus-session-ev-exact-12.json matches its pin; bonus-session-ev-exact-14.json matches its pin; bonus-session-ev-exact-8.json matches its pin; bonus-session-ev.json matches its pin; cpu-base-2pow32.json matches its pin; cpu-bonus-2pow32.json matches its pin; rtp-convergence.html matches its pin; simulation-results.json matches its pin"
     }
   ],
   "summary": {
-    "passed": 32,
+    "passed": 33,
     "flags": 0,
     "failed": 0,
     "info": 0,

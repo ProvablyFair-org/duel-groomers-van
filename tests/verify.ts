@@ -27,6 +27,7 @@ import * as dataset      from './steps/dataset';
 import * as simulation   from './steps/simulation';
 import * as gameSpecific from './steps/game-specific';
 import * as enumeration  from './steps/enumeration';
+import * as artifacts   from './steps/artifacts';
 import { type VerifyContext, type StepResult } from './steps/context';
 
 // ── Hash guard runs FIRST, before loading the dataset into memory ─────────────
@@ -85,6 +86,7 @@ const results: StepResult[] = [
   ...simulation.run(ctx),    // Steps 16–18
   ...gameSpecific.run(ctx),  // Steps 19–28
   ...enumeration.run(ctx),   // Steps 29–32 (2³² exhaustive enumeration artifacts + headline RTP)
+  ...artifacts.run(ctx),    // Step 33
 ];
 
 // ── Summary ────────────────────────────────────────────────────────────────────
