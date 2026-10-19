@@ -15,9 +15,10 @@
  *                                   (re-derives the per-spin aggregate RTPs; does NOT regenerate the
  *                                   joint_histogram / scatter_histogram in the committed artifact)
  *   - `npm run enumerate:cuda`    — CUDA fast path, ~90s on RTX 5060 (re-derives the committed
- *                                   artifact in full; numerical parity against the committed file
- *                                   expected — CUDA float32 vs TS float64 has a documented noise
- *                                   floor, see `scripts/cpu-cuda-parity.ts` for tolerances)
+ *                                   artifact in full; byte-parity against the committed file expected)
+ *
+ * See MANIFEST.md#reproduce-the-audit (enumeration layers) and MANIFEST.md#payouts-and-rtp for the 3-layer
+ * reproducibility plan and what each layer proves.
  */
 
 import * as fs     from 'fs';
@@ -41,9 +42,6 @@ const EXPECTED_SESSION_HASHES: Record<number, string> = {
   14: '79236fe8facf3b6ab33238a51a121f333f80bb38e0ec9361a5585fd81bc97461',
 };
 
-// Operator's published game RTP (Zero Edge, bracket 0).
-const OPERATOR_RTP = 1.0;
-
 // Initial-spin counts per scatter count (from operator config).
 // 3 → 8, 4 → 10, 5 → 12, 6+ → 14
 const INITIAL_SPINS_BY_SCATTERS: Record<number, number> = { 3: 8, 4: 10, 5: 12, 6: 14 };
@@ -56,6 +54,8 @@ interface BaseArtifact {
   range: { from: number; to: number; count: number };
   condition: 'base_game';
   rtp: number;
+  sum?: number;
+  hist_granularity?: number;
   win_rate: number;
   histogram: [number, number][];
   scatter_histogram: number[];
@@ -70,6 +70,86 @@ interface SessionArtifact {
   max_retriggers: number;
   max_win_x: number;
   result: { mean_session_payout: number };
+}
+
+/**
+ * The headline derivation, shared by Step 32 (which scores it against the operator's claim) and
+ * Step 16 (which uses it as the EXACT anchor the Monte Carlo must reproduce). Reads the pinned
+ * artifacts only; returns null when any is missing (Steps 29–31 report that). Also returns what
+ * Step 16 needs to size its bound from computed numbers rather than a round figure: the exact
+ * per-spin variance of the base game (from the 2^32 histogram), the exact per-session mean and
+ * standard deviation for each initial-spin count, and the rounding bound the session convolution
+ * itself declares.
+ */
+export interface EnumeratedRtp {
+  baseRTP: number;
+  baseWinRate: number;
+  baseVariance: number;
+  pByScatter: { p3: number; p4: number; p5: number; p6plus: number };
+  pTrig: number;
+  sessionMeanByInitialSpins: Record<number, number>;
+  sessionStdByInitialSpins: Record<number, number>;
+  sessionRoundingStdevBoundMax: number;
+  eSessionTriggered: number;
+  totalRtp: number;
+}
+
+/**
+ * `rules` defaults to the operator's published trigger rules. Step 16's NEGATIVE CONTROL (GROOMERS-18,
+ * added 2026-09-26) passes deliberately corrupted rules — a wrong trigger threshold, a wrong
+ * spins-per-scatter table — to derive the anchor a corrupted model would predict, and requires the
+ * Monte Carlo to be rejected against it.
+ */
+export interface TriggerRules { minScatters: number; spinsByScatters: Record<number, number> }
+export const PUBLISHED_TRIGGER_RULES: TriggerRules = Object.freeze({
+  minScatters: 3, spinsByScatters: Object.freeze({ ...INITIAL_SPINS_BY_SCATTERS }),
+}) as TriggerRules;
+
+export function deriveEnumeratedRtp(outputsDir: string, rules: TriggerRules = PUBLISHED_TRIGGER_RULES): EnumeratedRtp | null {
+  const basePath = path.join(outputsDir, 'base-2pow32.json');
+  const sessionPathFor = (n: number) => path.join(outputsDir, `bonus-session-ev-exact-${n}.json`);
+  const SESSION_SPIN_COUNTS = [8, 10, 12, 14];
+  if (!fs.existsSync(basePath) || !SESSION_SPIN_COUNTS.every(n => fs.existsSync(sessionPathFor(n)))) return null;
+  const base = JSON.parse(fs.readFileSync(basePath, 'utf-8')) as BaseArtifact & { hist_granularity: number };
+  const mean: Record<number, number> = {}, std: Record<number, number> = {};
+  let roundMax = 0;
+  for (const n of SESSION_SPIN_COUNTS) {
+    const s = JSON.parse(fs.readFileSync(sessionPathFor(n), 'utf-8')) as SessionArtifact
+      & { result: { std: number; rounding_stdev_bound: number } };
+    if (s.initial_spins !== n) return null;
+    mean[n] = s.result.mean_session_payout;
+    std[n] = s.result.std;
+    roundMax = Math.max(roundMax, s.result.rounding_stdev_bound);
+  }
+  const sh = base.scatter_histogram;
+  const totalBase = base.range.count;
+  // A scatter class below the trigger threshold triggers nothing (its probability is zeroed).
+  const trig = (k: number, p: number): number => (k >= rules.minScatters ? p : 0);
+  const p3      = trig(3, sh[3] / totalBase);
+  const p4      = trig(4, sh[4] / totalBase);
+  const p5      = trig(5, sh[5] / totalBase);
+  const p6plus  = trig(6, sh.slice(6).reduce((a, b) => a + b, 0) / totalBase);
+  const pTrig   = p3 + p4 + p5 + p6plus;
+  const sp = rules.spinsByScatters;
+  if (![3, 4, 5, 6].every(k => mean[sp[k]] !== undefined)) return null;
+  const eSessionTriggered =
+    (p3 * mean[sp[3]] +
+     p4 * mean[sp[4]] +
+     p5 * mean[sp[5]] +
+     p6plus * mean[sp[6]]) / pTrig;
+  const totalRtp = base.rtp + pTrig * eSessionTriggered;
+  // Exact per-spin variance of the base game from the full 2^32 histogram (bucket width
+  // hist_granularity; values are bucket * granularity).
+  let n0 = 0, m1 = 0, m2 = 0;
+  for (const [k, c] of base.histogram) { const x = k * base.hist_granularity; n0 += c; m1 += c * x; m2 += c * x * x; }
+  const baseVariance = m2 / n0 - (m1 / n0) ** 2;
+  return {
+    baseRTP: base.rtp, baseWinRate: base.win_rate, baseVariance,
+    pByScatter: { p3, p4, p5, p6plus }, pTrig,
+    sessionMeanByInitialSpins: mean, sessionStdByInitialSpins: std,
+    sessionRoundingStdevBoundMax: roundMax,
+    eSessionTriggered, totalRtp,
+  };
 }
 
 export function run(_ctx: VerifyContext): StepResult[] {
@@ -181,22 +261,52 @@ export function run(_ctx: VerifyContext): StepResult[] {
      p6plus * evN(INITIAL_SPINS_BY_SCATTERS[6])) / pTrig;
 
   const totalRtp = base.rtp + pTrig * eSessionTriggered;
-  const deviation = Math.abs(totalRtp - OPERATOR_RTP);
 
-  const detail =
-    `base RTP=${base.rtp.toFixed(6)}, P(trigger)=${pTrig.toFixed(8)} (1/${(1/pTrig).toFixed(1)}), ` +
-    `E[session|trig]=${eSessionTriggered.toFixed(4)}, ` +
-    `total RTP = ${totalRtp.toFixed(6)} = ${(totalRtp * 100).toFixed(4)}%  ` +
-    `(operator claim ${OPERATOR_RTP * 100}%, deviation ${(deviation * 100).toFixed(4)}%)`;
+  // C3 (FIXPASS2, 14 Oct 2026). This step used to hold the derived total to the operator's 100 % claim
+  // itself — PASS within 0.1 pp, an operator FLAG (exit 2) within 1 pp, FAIL (exit 1) beyond — so an
+  // RTP miss could end the run before the rule did. The claim is the RTP-CLAIM rule's, scored on this
+  // step: the derived total is the one row of the RTP table (src/rtp-settings.ts, the same derivation)
+  // and a house-side miss beyond the 0.1 pp band makes the verdict RTP FIGURE OVERSTATED, exit 5. What
+  // this step decides now is the derivation itself: the base RTP it starts from is recomputed from the
+  // base artifact's own sum and histogram (a forged headline field in a re-pinned artifact fails here).
+  let histCount = 0, histSum = 0;
+  const gran = base.hist_granularity ?? NaN;
+  for (const [k, c] of base.histogram) { histCount += c; histSum += c * k * gran; }
+  const sumRtp = typeof base.sum === 'number' ? base.sum / base.range.count : NaN;
+  const histRtp = histSum / histCount;
+  const SUM_REL_TOL = 1e-12;   // rtp is sum / count; only the double division separates them
+  const HIST_ABS_TOL = 1e-6;   // bucket means at hist_granularity; measured gap 1.9e-9 on the committed artifact
+  const derivationIssues: string[] = [];
+  if (!(Math.abs(sumRtp - base.rtp) <= SUM_REL_TOL * base.rtp)) derivationIssues.push(`base rtp ${base.rtp} is not sum / count = ${sumRtp}`);
+  if (histCount !== base.range.count) derivationIssues.push(`histogram counts ${histCount} spins, range ${base.range.count}`);
+  if (!(Math.abs(histRtp - base.rtp) <= HIST_ABS_TOL)) derivationIssues.push(`base rtp ${base.rtp} is not the histogram's mean ${histRtp}`);
 
-  if (deviation < 0.001) {
-    // Within 0.1% of operator's claim → PASS
-    results.push(step(32, 'Headline game RTP derivation', 'PASS', detail));
-  } else if (deviation < 0.01) {
-    // Within 1% — likely MC variance in session-EV, surface as FLAG
-    results.push(step(32, 'Headline game RTP derivation', 'FLAG', detail));
+  // Every figure here — the base RTP, the trigger probability, the conditional session EV,
+  // the derived total — is a measured float, and a float spelled into the sentence can only be
+  // compared as a string by the reproduction gate. The measurements go in the machine data block.
+  const data = {
+    baseRTP: base.rtp,
+    baseRTPFromSum: sumRtp,
+    baseRTPFromHistogram: histRtp,
+    triggerProbability: pTrig,
+    triggerOneIn: 1 / pTrig,
+    conditionalSessionEV: eSessionTriggered,
+    totalRTP: totalRtp,
+    sumRelTol: SUM_REL_TOL,
+    histAbsTol: HIST_ABS_TOL,
+  };
+
+  if (derivationIssues.length === 0) {
+    results.push(step(32, 'Headline game RTP derivation', 'PASS',
+      `Total RTP derived from the exhaustive 2^32 base enumeration plus the exact bonus-session convolution — `
+      + `base RTP + P(trigger) × E[session | trigger]; the base RTP equals the base artifact's own sum / count (relative ${SUM_REL_TOL}) `
+      + `and its histogram's mean (within ${HIST_ABS_TOL}). The derived total is the one row of the RTP table, held to the `
+      + `published figure by RTP-CLAIM on this step (band ±0.1 pp), not here. Figures in this step's data block.`,
+      data));
   } else {
-    results.push(step(32, 'Headline game RTP derivation', 'FAIL', detail));
+    results.push(step(32, 'Headline game RTP derivation', 'FAIL',
+      `The base artifact does not reproduce its own headline: ${derivationIssues.join('; ')}. Figures in this step's data block.`,
+      data));
   }
 
   return results;

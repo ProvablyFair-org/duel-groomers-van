@@ -1,5 +1,4 @@
 {
-  "generatedAt": "2026-06-01T13:16:38.453Z",
   "pass1": {
     "baseSpins": 30000000,
     "baseRTP": 0.5613237633291404,
@@ -115,6 +114,592 @@
   "pass2": {
     "seedsReplayed": 115,
     "totalCapturedSpins": 5730,
+    "capturedAggregateRTP": 0.5687433507853399,
+    "pass1ReferenceMean": 0.5570589999999948,
+    "pass1PerSpinStd": 0.9716173171163572,
+    "aggregateZScore": 0.9103044193743386,
+    "aggregateThreshold": 3,
+    "aggregateRiskLevel": "WITHIN EXPECTED RANGE",
+    "perSeedAboveP95": 5,
+    "perSeedExpectedAt5pct": 6,
+    "perSeedBinomialP": 0.6866030356248257,
+    "perSeedSummary": [
+      {
+        "seed": "38daabbe1a0a8e47",
+        "nSpins": 50,
+        "rtp": 0.77
+      },
+      {
+        "seed": "5e7b3d176eda490c",
+        "nSpins": 50,
+        "rtp": 0.58
+      },
+      {
+        "seed": "7084d8e9ea396516",
+        "nSpins": 50,
+        "rtp": 0.552
+      },
+      {
+        "seed": "22c4100388fb8a91",
+        "nSpins": 50,
+        "rtp": 0.81
+      },
+      {
+        "seed": "230ba817fa7535d7",
+        "nSpins": 50,
+        "rtp": 0.466
+      },
+      {
+        "seed": "27a06c53a24a3af8",
+        "nSpins": 50,
+        "rtp": 0.79
+      },
+      {
+        "seed": "5e91ccc405c55fb4",
+        "nSpins": 50,
+        "rtp": 0.408
+      },
+      {
+        "seed": "497c1d9087bedf01",
+        "nSpins": 50,
+        "rtp": 0.49
+      },
+      {
+        "seed": "78e532bfa1af0528",
+        "nSpins": 50,
+        "rtp": 0.724
+      },
+      {
+        "seed": "7a2e1dc5df87730c",
+        "nSpins": 50,
+        "rtp": 0.836
+      },
+      {
+        "seed": "89592cafc00942c6",
+        "nSpins": 50,
+        "rtp": 0.572
+      },
+      {
+        "seed": "89e8320cf44c593e",
+        "nSpins": 50,
+        "rtp": 0.594
+      },
+      {
+        "seed": "04d3cc5040be22df",
+        "nSpins": 50,
+        "rtp": 0.998
+      },
+      {
+        "seed": "a6f8de3ed0adf0bb",
+        "nSpins": 50,
+        "rtp": 0.564
+      },
+      {
+        "seed": "41afc74eb2c10d52",
+        "nSpins": 50,
+        "rtp": 0.452
+      },
+      {
+        "seed": "6b1b02a2cf521ecc",
+        "nSpins": 50,
+        "rtp": 0.518
+      },
+      {
+        "seed": "f0a13d968e6eae9b",
+        "nSpins": 50,
+        "rtp": 0.468
+      },
+      {
+        "seed": "7988a547012cca8c",
+        "nSpins": 50,
+        "rtp": 0.554
+      },
+      {
+        "seed": "7e9858b0b961a72f",
+        "nSpins": 50,
+        "rtp": 0.596
+      },
+      {
+        "seed": "4df3d571478d780e",
+        "nSpins": 50,
+        "rtp": 0.54
+      },
+      {
+        "seed": "f40b56971369350a",
+        "nSpins": 50,
+        "rtp": 0.638
+      },
+      {
+        "seed": "02969456954eff74",
+        "nSpins": 50,
+        "rtp": 0.584
+      },
+      {
+        "seed": "e67864b44243b8d6",
+        "nSpins": 50,
+        "rtp": 0.46
+      },
+      {
+        "seed": "3dfb9bee0e8896b3",
+        "nSpins": 50,
+        "rtp": 0.726
+      },
+      {
+        "seed": "4bdc86fffca8c853",
+        "nSpins": 50,
+        "rtp": 0.402
+      },
+      {
+        "seed": "68cefba2eeb85f1d",
+        "nSpins": 50,
+        "rtp": 0.47
+      },
+      {
+        "seed": "07b03120553f7b54",
+        "nSpins": 50,
+        "rtp": 0.65
+      },
+      {
+        "seed": "b61a1b052ea502d3",
+        "nSpins": 50,
+        "rtp": 0.574
+      },
+      {
+        "seed": "1cda20325a7dc2ca",
+        "nSpins": 50,
+        "rtp": 0.49
+      },
+      {
+        "seed": "f4e851315629dc72",
+        "nSpins": 50,
+        "rtp": 0.654
+      },
+      {
+        "seed": "c929e438eb4dcab0",
+        "nSpins": 50,
+        "rtp": 0.448
+      },
+      {
+        "seed": "40cdc5c125d44055",
+        "nSpins": 50,
+        "rtp": 0.716
+      },
+      {
+        "seed": "f28c52f29b292b78",
+        "nSpins": 50,
+        "rtp": 0.526
+      },
+      {
+        "seed": "e4abdd68541081f9",
+        "nSpins": 50,
+        "rtp": 0.552
+      },
+      {
+        "seed": "175dd7e6e000f911",
+        "nSpins": 50,
+        "rtp": 0.52
+      },
+      {
+        "seed": "34ad693f88d35b1b",
+        "nSpins": 50,
+        "rtp": 0.476
+      },
+      {
+        "seed": "c122fbfb25e49417",
+        "nSpins": 50,
+        "rtp": 0.634
+      },
+      {
+        "seed": "05a69304e8287f6f",
+        "nSpins": 50,
+        "rtp": 0.614
+      },
+      {
+        "seed": "596ffb792570feca",
+        "nSpins": 50,
+        "rtp": 0.646
+      },
+      {
+        "seed": "87b09e84979eb1aa",
+        "nSpins": 50,
+        "rtp": 0.508
+      },
+      {
+        "seed": "e988f784690c3510",
+        "nSpins": 50,
+        "rtp": 0.354
+      },
+      {
+        "seed": "ff63b867f219792b",
+        "nSpins": 50,
+        "rtp": 0.49
+      },
+      {
+        "seed": "10bdc00eaa92da1f",
+        "nSpins": 50,
+        "rtp": 0.654
+      },
+      {
+        "seed": "e2f88b404d18d109",
+        "nSpins": 50,
+        "rtp": 0.456
+      },
+      {
+        "seed": "f85a2054de7f31b5",
+        "nSpins": 50,
+        "rtp": 0.462
+      },
+      {
+        "seed": "530906541c071c1a",
+        "nSpins": 50,
+        "rtp": 0.372
+      },
+      {
+        "seed": "3900b896042e061c",
+        "nSpins": 50,
+        "rtp": 0.558
+      },
+      {
+        "seed": "fd2063d1961fb943",
+        "nSpins": 50,
+        "rtp": 0.618
+      },
+      {
+        "seed": "691198f6c2f0f197",
+        "nSpins": 50,
+        "rtp": 0.618
+      },
+      {
+        "seed": "96965a1e9a0359a3",
+        "nSpins": 50,
+        "rtp": 0.814
+      },
+      {
+        "seed": "105dce1495ac2fba",
+        "nSpins": 50,
+        "rtp": 0.586
+      },
+      {
+        "seed": "544f123640c7f3c0",
+        "nSpins": 50,
+        "rtp": 0.588
+      },
+      {
+        "seed": "b03fe2b160d71734",
+        "nSpins": 50,
+        "rtp": 0.596
+      },
+      {
+        "seed": "a81baf3e7dee56be",
+        "nSpins": 50,
+        "rtp": 0.552
+      },
+      {
+        "seed": "f6701fb2f7585c19",
+        "nSpins": 50,
+        "rtp": 0.692
+      },
+      {
+        "seed": "7389989b4e8edbfa",
+        "nSpins": 50,
+        "rtp": 0.63
+      },
+      {
+        "seed": "f89571524fb7e57c",
+        "nSpins": 50,
+        "rtp": 0.654
+      },
+      {
+        "seed": "e7b63497eab27810",
+        "nSpins": 50,
+        "rtp": 0.28
+      },
+      {
+        "seed": "2041e0ca880b1212",
+        "nSpins": 50,
+        "rtp": 0.556
+      },
+      {
+        "seed": "5803ee996bd48a50",
+        "nSpins": 50,
+        "rtp": 0.448
+      },
+      {
+        "seed": "0b5b1bb8df9e4f96",
+        "nSpins": 50,
+        "rtp": 0.71
+      },
+      {
+        "seed": "eefa14abc85228c1",
+        "nSpins": 50,
+        "rtp": 0.44
+      },
+      {
+        "seed": "36b39357574df894",
+        "nSpins": 50,
+        "rtp": 0.5
+      },
+      {
+        "seed": "a950830479e4d03b",
+        "nSpins": 50,
+        "rtp": 0.712
+      },
+      {
+        "seed": "870e2f7e470a8255",
+        "nSpins": 50,
+        "rtp": 0.756
+      },
+      {
+        "seed": "2fdf4a580b54ad4a",
+        "nSpins": 50,
+        "rtp": 0.78
+      },
+      {
+        "seed": "e4075e9da479b897",
+        "nSpins": 50,
+        "rtp": 0.54
+      },
+      {
+        "seed": "f7b9460141670517",
+        "nSpins": 50,
+        "rtp": 0.644
+      },
+      {
+        "seed": "0e83e987da020751",
+        "nSpins": 50,
+        "rtp": 0.772
+      },
+      {
+        "seed": "4f6af0365ea5cc6c",
+        "nSpins": 50,
+        "rtp": 0.566
+      },
+      {
+        "seed": "386dd5338fc0b288",
+        "nSpins": 50,
+        "rtp": 0.354
+      },
+      {
+        "seed": "576f32a7f8f326fb",
+        "nSpins": 50,
+        "rtp": 0.478
+      },
+      {
+        "seed": "1385427ea2271a5a",
+        "nSpins": 50,
+        "rtp": 0.64
+      },
+      {
+        "seed": "9bc6c1d67051e2e0",
+        "nSpins": 50,
+        "rtp": 0.66
+      },
+      {
+        "seed": "0467ccc77ed4d728",
+        "nSpins": 50,
+        "rtp": 0.44
+      },
+      {
+        "seed": "8af14f626a10e827",
+        "nSpins": 50,
+        "rtp": 0.32
+      },
+      {
+        "seed": "a38c9d864f3f216c",
+        "nSpins": 50,
+        "rtp": 0.498
+      },
+      {
+        "seed": "44370896c1df29e8",
+        "nSpins": 50,
+        "rtp": 0.73
+      },
+      {
+        "seed": "8e7db7c2bf5d929e",
+        "nSpins": 50,
+        "rtp": 0.404
+      },
+      {
+        "seed": "b0e4406a828814b3",
+        "nSpins": 50,
+        "rtp": 0.476
+      },
+      {
+        "seed": "a9e7407a46cfa914",
+        "nSpins": 50,
+        "rtp": 0.53
+      },
+      {
+        "seed": "ed04f340fdb983bb",
+        "nSpins": 50,
+        "rtp": 0.544
+      },
+      {
+        "seed": "824cd891835b0ca4",
+        "nSpins": 50,
+        "rtp": 0.508
+      },
+      {
+        "seed": "835ea64b11c463f4",
+        "nSpins": 50,
+        "rtp": 0.242
+      },
+      {
+        "seed": "f8cbb023dff87eef",
+        "nSpins": 50,
+        "rtp": 0.504
+      },
+      {
+        "seed": "9b3f76f2da26bfb9",
+        "nSpins": 50,
+        "rtp": 0.622
+      },
+      {
+        "seed": "15bb6ec1898a7cd7",
+        "nSpins": 50,
+        "rtp": 0.744
+      },
+      {
+        "seed": "098926e2ad578b64",
+        "nSpins": 50,
+        "rtp": 0.43
+      },
+      {
+        "seed": "565e79dfc8ef2328",
+        "nSpins": 50,
+        "rtp": 0.558
+      },
+      {
+        "seed": "34239ab99f07a080",
+        "nSpins": 50,
+        "rtp": 0.808
+      },
+      {
+        "seed": "cf3a81b6c84112fa",
+        "nSpins": 50,
+        "rtp": 0.474
+      },
+      {
+        "seed": "07101d7b1320e3fe",
+        "nSpins": 50,
+        "rtp": 0.492
+      },
+      {
+        "seed": "f550dddaedf9a2c1",
+        "nSpins": 50,
+        "rtp": 0.656
+      },
+      {
+        "seed": "753009456b503624",
+        "nSpins": 50,
+        "rtp": 0.514
+      },
+      {
+        "seed": "0b9583c73312af77",
+        "nSpins": 50,
+        "rtp": 0.564
+      },
+      {
+        "seed": "040b1276993f9b3c",
+        "nSpins": 50,
+        "rtp": 0.568
+      },
+      {
+        "seed": "fe22e757db471f7b",
+        "nSpins": 50,
+        "rtp": 0.578
+      },
+      {
+        "seed": "6e69c35d78da6004",
+        "nSpins": 50,
+        "rtp": 0.612
+      },
+      {
+        "seed": "6be849399e3b5fd3",
+        "nSpins": 50,
+        "rtp": 0.412
+      },
+      {
+        "seed": "5ef2ee62a5c22d16",
+        "nSpins": 50,
+        "rtp": 0.642
+      },
+      {
+        "seed": "c1bd39c028388204",
+        "nSpins": 30,
+        "rtp": 0.4
+      },
+      {
+        "seed": "711afc49010a6458",
+        "nSpins": 50,
+        "rtp": 0.324
+      },
+      {
+        "seed": "6d35b69ac5bfc13a",
+        "nSpins": 50,
+        "rtp": 0.544
+      },
+      {
+        "seed": "edcf273b05949d00",
+        "nSpins": 50,
+        "rtp": 0.784
+      },
+      {
+        "seed": "6607ed18012f0d1f",
+        "nSpins": 50,
+        "rtp": 0.462
+      },
+      {
+        "seed": "b94fd79f3cc61dab",
+        "nSpins": 50,
+        "rtp": 0.562
+      },
+      {
+        "seed": "ff878537bb87d385",
+        "nSpins": 50,
+        "rtp": 0.624
+      },
+      {
+        "seed": "eace5d1d1a5a14e9",
+        "nSpins": 50,
+        "rtp": 0.534
+      },
+      {
+        "seed": "3f4bd4970d7fec73",
+        "nSpins": 50,
+        "rtp": 0.588
+      },
+      {
+        "seed": "a55b3ac123f8f860",
+        "nSpins": 50,
+        "rtp": 0.634
+      },
+      {
+        "seed": "e50d1e42279e8dc3",
+        "nSpins": 50,
+        "rtp": 0.594
+      },
+      {
+        "seed": "13d0dba73be35299",
+        "nSpins": 50,
+        "rtp": 0.604
+      },
+      {
+        "seed": "4d3bcf9be5d55a88",
+        "nSpins": 50,
+        "rtp": 0.574
+      },
+      {
+        "seed": "a7ad58d4e9b560aa",
+        "nSpins": 50,
+        "rtp": 0.506
+      },
+      {
+        "seed": "08bbda522aa935c1",
+        "nSpins": 50,
+        "rtp": 0.634
+      }
+    ],
     "forwardReplay": {
       "epochs": 115,
       "noncesPerSeed": 10000,
@@ -124,7 +709,6 @@
       "cherryPickFlags": 4,
       "cherryPickPValue": 0.8321114541424309,
       "cherryPickVerdict": "PASS",
-      "executionTimeMs": 21193,
       "results": [
         {
           "seed_hash": "1966b35c0357323c0e3f5f7150805522bfb6d7db386dab31340e7bc9c4d9a3dd",

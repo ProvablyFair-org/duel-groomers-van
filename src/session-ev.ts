@@ -6,7 +6,8 @@
  * the expected value of a single bonus-buy session via Monte Carlo
  * over the empirically-exact per-spin distribution.
  *
- * Session model (per Duel disclosure, see working-notes/2026-05-22-* PDF):
+ * Session model (the 5000× session cap per the operator's written answers, evidence E03 — held on file,
+ * not published; the spin counts per the operator config, data/raw/groomers-van-config-v1.4.json):
  *   - Buy enters as the 4-scatter case → 10 free spins initial
  *   - Each spin: sample (payout, scatter_count) from the joint distribution
  *   - Per-spin payout already capped at 5000× by the per-spin enumeration
@@ -78,7 +79,8 @@ function sampleIndex(joint: JointDistribution, r: number): number {
   return lo;
 }
 
-// Free spins awarded by scatter count (per Duel PDF):
+// Free spins awarded by scatter count (operator config retrigger_rewards / max_retriggers,
+// data/raw/groomers-van-config-v1.4.json):
 // Retriggers: 3 → 3, 4 → 5, 5 → 8, 6+ → 10
 const RETRIGGER_SPINS: Record<number, number> = { 3: 3, 4: 5, 5: 8, 6: 10, 7: 10 };
 const MAX_RETRIGGERS = 3;

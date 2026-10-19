@@ -1,0 +1,574 @@
+[
+ {
+  "name": "M01 a revealed server seed corrupted",
+  "step": 1,
+  "expect": "[FAIL] Step 1",
+  "guard": "GROOMERS-01: every seed hashes to its commitment.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; (ds.seeds as any[])[10].seed.serverSeed = '00'.repeat(32); } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M02 a forward commitment link broken",
+  "step": 2,
+  "expect": "[FAIL] Step 2",
+  "guard": "GROOMERS-02: each rotation's active hash was published as next.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; (ds.seeds as any[])[30].seed.nextServerSeedHash = '0'.repeat(64); } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M03 a bet given a foreign client seed",
+  "step": 3,
+  "expect": "[FAIL] Step 3",
+  "guard": "GROOMERS-03: every bet carries the rotation's client seed.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; B[100].activeAtSpin.client_seed = 'pf_FORGED_SEED'; } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M04 a declared capture gap moved",
+  "step": 4,
+  "expect": "[FAIL] Step 4",
+  "guard": "GROOMERS-04: gaps are bound by (epoch, nonce).",
+  "file": "src/loader.ts",
+  "find": "9a86d9bbfd8ae3a6bc52078b49bddfc42e', nonce: 2 },",
+  "replace": "9a86d9bbfd8ae3a6bc52078b49bddfc42e', nonce: 3 },",
+  "runner": "verify"
+ },
+ {
+  "name": "M04b a nonce served twice",
+  "step": 4,
+  "expect": "[FAIL] Step 4",
+  "guard": "GROOMERS-04: a reused nonce FAILs.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; const s = B.filter(x => x.mode === 'spin'); s[5].nonce = s[4].nonce; } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M05 a served initial-grid cell altered",
+  "step": 5,
+  "expect": "[FAIL] Step 5",
+  "guard": "GROOMERS-07: every grid reproduces 30/30.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; const b = B.find(x => x.mode === 'spin' && x.phase === 'A'); const v = b.response.rounds[0].data.view; const c = v[0][0]; c.symbol = c.symbol === 'symbol_1' ? 'symbol_2' : 'symbol_1'; } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M05b a declared nonce correction removed",
+  "step": 5,
+  "expect": "[FAIL] Step 5",
+  "guard": "GROOMERS-07: the four corrections are bound by id.",
+  "file": "src/loader.ts",
+  "find": "  { spinId: 1976463, recorded: 22, served: 23 },\n",
+  "replace": "",
+  "runner": "verify"
+ },
+ {
+  "name": "M05c site verifier derive.js edited without re-pin",
+  "step": 5,
+  "expect": "vendored site verifier does not match its pinned SHA-256",
+  "guard": "GROOMERS-24: vendored site files hash to their pins.",
+  "file": "verifier-parity/games/groomers-van/derive.js",
+  "find": "Duel.com Groomer's Van RNG",
+  "replace": "Duel.com Groomer's Van  RNG",
+  "runner": "verify"
+ },
+ {
+  "name": "M05d site paytable cell forged and re-pinned",
+  "step": 5,
+  "expect": "site verifier disagrees",
+  "guard": "GROOMERS-24: the site's paytable is executed.",
+  "file": "verifier-parity/games/groomers-van/paytables.js",
+  "find": "      symbol_1: { 8: 0.4, 9: 0.4, 10: 0.6, 11: 0.7, 12: 2.0 },",
+  "replace": "      symbol_1: { 8: 0.5, 9: 0.4, 10: 0.6, 11: 0.7, 12: 2.0 },",
+  "repin": [
+   {
+    "file": "src/site-verifier.ts",
+    "find": "57fd0e4ac6abd986a06a7bd977e864214d48991e588d4c075e71796c50271469",
+    "hashOf": "verifier-parity/games/groomers-van/paytables.js"
+   }
+  ],
+  "runner": "verify"
+ },
+ {
+  "name": "M05e the draw acceptance window widened",
+  "step": 5,
+  "expect": "NOT a whole number of totals",
+  "guard": "GROOMERS-08: the bias bound is measured from acceptedDraw.",
+  "file": "src/rng.ts",
+  "find": "  return value < maxFair ? value % total : null;",
+  "replace": "  return value < MAX_UINT32 ? value % total : null;",
+  "runner": "verify"
+ },
+ {
+  "name": "M05f Duel's Verify-tab capture edited without re-pin",
+  "step": 5,
+  "expect": "does not match its pinned SHA-256",
+  "guard": "GROOMERS-09: the operator code is pinned before it runs.",
+  "file": "evidence/verify-tab/duel-verify-tab-groomers-van-2026-05-19.captured.json",
+  "find": "// Provably Fair Slots Verification (PCG32 PRNG)",
+  "replace": "// Provably Fair Slots Verification  (PCG32 PRNG)",
+  "runner": "verify"
+ },
+ {
+  "name": "M05g an operator source citation moved",
+  "step": 5,
+  "expect": "operator source citations broken",
+  "guard": "GROOMERS-09: every cited operator line must carry its text.",
+  "file": "src/rng.ts",
+  "find": "{ line: 51,  text: 'const clientSeedHex",
+  "replace": "{ line: 50,  text: 'const clientSeedHex",
+  "runner": "verify"
+ },
+ {
+  "name": "M05h an initial-grid bonus multiplier value altered",
+  "step": 5,
+  "expect": "initial-grid bonus multiplier values",
+  "guard": "GROOMERS-07/10: initial-grid multiplier values are recomputed with the weights.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; outer: for (const b of B) { if (b.mode !== 'free_spin') continue; for (const col of b.response.rounds[0].data.view) for (const c of col) if (c.multiplier_value) { c.multiplier_value = c.multiplier_value === '2' ? '3' : '2'; break outer; } } } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M05i the 1974625 nonce correction removed",
+  "step": 5,
+  "expect": "verify payload nonce 3 != served nonce 2",
+  "guard": "GROOMERS-07: a base spin's verify-payload nonce must equal its served nonce (added 2026-10-04 with the fourth correction).",
+  "file": "src/loader.ts",
+  "find": "  { spinId: 1974625, recorded: 2,  served: 3 },\n",
+  "replace": "",
+  "runner": "verify"
+ },
+ {
+  "name": "M05j a free spin's current_spin moved by one",
+  "step": 5,
+  "expect": "!= free-spin rule",
+  "guard": "GROOMERS-07/25: every free spin's payload nonce and round_index follow the published free-spin rule; the grid still reproduces, so only this guard sees it (added 2026-10-04).",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; const b = B.find(x => x.mode === 'free_spin' && x.response.feature_status); b.response.feature_status.current_spin += 1; } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M05k the 14 distinct multiplier values given to Duel's Verify-tab code",
+  "step": 5,
+  "expect": "[FAIL] Step 5",
+  "guard": "GROOMERS-09: Duel's Verify-tab code is given the published multiplier weights as a 200-entry list and its initial-grid multiplier values are scored (added 2026-10-05). Given the 14 distinct values instead, its uniform pick is no longer the weighted draw; the list pin still holds, so only the multiplier comparison can see it.",
+  "file": "tests/steps/determinism.ts",
+  "find": "      multiplierValues: opMultiplierList,\n",
+  "replace": "      multiplierValues: ctx.paytable.multiplierValuesList,\n",
+  "runner": "verify"
+ },
+ {
+  "name": "M06 a published outcome_index equal to the tampered-seed one",
+  "step": 6,
+  "expect": "[FAIL] Step 6",
+  "guard": "GROOMERS-06: the client seed must move the outcome index.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; const b = B.find(x => x.verifyData && x.verifyData.server_seed && x.verifyData.client_seed); const vd = b.verifyData; vd.outcome_index = (require('../src/rng') as any).computeOutcomeIndex(vd.server_seed, `${vd.client_seed}_PF_TAMPERED`, vd.nonce); } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M07 a credit lowered by one cent on all four fields",
+  "step": 7,
+  "expect": "[FAIL] Step 7",
+  "guard": "GROOMERS-11: payouts exact in integer cents.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; const b = B.find(x => x.mode === 'spin' && x.response.amount_won_coins === '0.4'); for (const k of ['amount_won_coins','amount_won','total_win','total_win_currency']) b.response[k] = '0.39'; } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M07b a coins credit one cent off the bet's rate",
+  "step": 7,
+  "expect": "[FAIL] Step 7",
+  "guard": "GROOMERS-11: amount_won_coins is amount_won at the bet's own coins/USD rate, rounded to 2 dp (added 2026-10-05). Spin 1987702 won $50 at 49.9915 coins per $50; its coins credit and total_win are set to 50 (the USD figure, unconverted), so both coins fields still agree and amount_won is untouched: only the conversion check can see it.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; const b = B.find(x => x.spinId === 1987702); b.response.amount_won_coins = '50'; b.response.total_win = '50'; } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M08 a payline multiplier moved 1e-7",
+  "step": 8,
+  "expect": "[FAIL] Step 8",
+  "guard": "GROOMERS-13: served multipliers equal the paytable exactly.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; const b = B.find(x => x.mode === 'spin' && x.response.rounds[0].data.paylines.length > 0 && x.response.rounds[0].data.paylines[0].win_type === 'cluster'); b.response.rounds[0].data.paylines[0].multiplier += 1e-7; } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M09 a Phase B grid cell altered",
+  "step": 9,
+  "expect": "[FAIL] Step 9",
+  "guard": "GROOMERS-12: stake-variation bets recompute.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; const b = B.find(x => x.phase === 'B' && x.mode === 'spin'); const v = b.response.rounds[0].data.view; const c = v[0][0]; c.symbol = c.symbol === 'symbol_1' ? 'symbol_2' : 'symbol_1'; } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M10 an edge_multiplier off 1",
+  "step": 10,
+  "expect": "[FAIL] Step 10",
+  "guard": "GROOMERS-19: the served edge multiplier must be 1.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; B[0].response.edge_multiplier = 2; } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M11 the paytable-cell floor raised",
+  "step": 11,
+  "expect": "[FAIL] Step 11",
+  "guard": "GROOMERS-15: coverage meets the floor in code.",
+  "file": "src/loader.ts",
+  "find": "export const MIN_PAYTABLE_CELLS_EXERCISED = 55;",
+  "replace": "export const MIN_PAYTABLE_CELLS_EXERCISED = 63;",
+  "runner": "verify"
+ },
+ {
+  "name": "M12 the declared short epochs changed",
+  "step": 12,
+  "expect": "[FAIL] Step 12",
+  "guard": "GROOMERS-05: epoch sizes are bound to code.",
+  "file": "src/loader.ts",
+  "find": "Object.freeze([20, 30]);",
+  "replace": "Object.freeze([21, 29]);",
+  "runner": "verify"
+ },
+ {
+  "name": "M13 an entry deleted",
+  "step": 13,
+  "expect": "[FAIL] Step 13",
+  "guard": "GROOMERS-05: the population is bound to code.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; B.pop(); } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M14 the operator config edited without re-pin",
+  "step": 14,
+  "expect": "[FAIL] Step 14",
+  "guard": "GROOMERS-26: data/raw files are pinned.",
+  "file": "data/raw/groomers-van-config-v1.4.json",
+  "find": "{\n  \"id\": 3,",
+  "replace": "{\n  \"id\":  3,",
+  "runner": "verify"
+ },
+ {
+  "name": "M15 the Phase D seed count changed",
+  "step": 15,
+  "expect": "[FAIL] Step 15",
+  "guard": "GROOMERS-06: Phase D runs the declared 10 × 50 plan.",
+  "file": "src/loader.ts",
+  "find": "export const PHASE_D_SEED_COUNT     = 10;",
+  "replace": "export const PHASE_D_SEED_COUNT     = 11;",
+  "runner": "verify"
+ },
+ {
+  "name": "M16 the simulated base RTP forged and re-pinned",
+  "step": 16,
+  "expect": "[FAIL] Step 16",
+  "guard": "GROOMERS-18: the Monte Carlo is scored against the enumeration.",
+  "file": "outputs/simulation-results.json",
+  "find": "\"baseRTP\": 0.5613237633291404",
+  "replace": "\"baseRTP\": 0.60",
+  "repin": [
+   {
+    "file": "src/artifact-pins.ts",
+    "find": "4becfea46f75bb5715343cfad9ee0de64f5438eb6823975c981c7facb930c8cf",
+    "hashOf": "outputs/simulation-results.json"
+   }
+  ],
+  "runner": "verify"
+ },
+ {
+  "name": "M17 a per-reel chi-squared forged and re-pinned",
+  "step": 17,
+  "expect": "[FAIL] Step 17",
+  "guard": "GROOMERS-20: every reel's p is recomputed from its chi-squared.",
+  "file": "outputs/simulation-results.json",
+  "find": "\"chi2\": 8.63358187521482",
+  "replace": "\"chi2\": 500",
+  "repin": [
+   {
+    "file": "src/artifact-pins.ts",
+    "find": "4becfea46f75bb5715343cfad9ee0de64f5438eb6823975c981c7facb930c8cf",
+    "hashOf": "outputs/simulation-results.json"
+   }
+  ],
+  "runner": "verify"
+ },
+ {
+  "name": "M18 the Pass 2 flag count forged and re-pinned",
+  "step": 18,
+  "expect": "[FAIL] Step 18",
+  "guard": "GROOMERS-21: flags are re-derived from the rows.",
+  "file": "outputs/simulation-results.json",
+  "find": "\"cherryPickFlags\": 4,",
+  "replace": "\"cherryPickFlags\": 5,",
+  "repin": [
+   {
+    "file": "src/artifact-pins.ts",
+    "find": "4becfea46f75bb5715343cfad9ee0de64f5438eb6823975c981c7facb930c8cf",
+    "hashOf": "outputs/simulation-results.json"
+   }
+  ],
+  "runner": "verify"
+ },
+ {
+  "name": "M19 a cluster count inflated",
+  "step": 19,
+  "expect": "[FAIL] Step 19",
+  "guard": "GROOMERS-10: count = symbol cells + wild cells.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; const b = B.find(x => x.mode === 'spin' && x.response.rounds[0].data.paylines.length > 0 && x.response.rounds[0].data.paylines[0].win_type === 'cluster'); b.response.rounds[0].data.paylines[0].count += 1; } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M20 the cascade population changed",
+  "step": 20,
+  "expect": "[FAIL] Step 20",
+  "guard": "GROOMERS-10: every cascade round is examined.",
+  "file": "src/loader.ts",
+  "find": "export const EXPECTED_CASCADE_ROUNDS = 4323;",
+  "replace": "export const EXPECTED_CASCADE_ROUNDS = 4324;",
+  "runner": "verify"
+ },
+ {
+  "name": "M21 the shared-wild population changed",
+  "step": 21,
+  "expect": "[FAIL] Step 21",
+  "guard": "GROOMERS-10: every shared-wild round is examined.",
+  "file": "src/loader.ts",
+  "find": "export const EXPECTED_SHARED_WILD_ROUNDS = 410;",
+  "replace": "export const EXPECTED_SHARED_WILD_ROUNDS = 411;",
+  "runner": "verify"
+ },
+ {
+  "name": "M22 a trigger's scatter count inflated",
+  "step": 22,
+  "expect": "[FAIL] Step 22",
+  "guard": "GROOMERS-17: triggers follow the published table and the grid.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; const b = B.find(x => x.mode === 'spin' && x.response.feature_status && x.response.feature_status.trigger_data); b.response.feature_status.trigger_data.scatter_count += 1; } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M23 the bonus-session population changed",
+  "step": 23,
+  "expect": "[FAIL] Step 23",
+  "guard": "GROOMERS-17: every session is examined.",
+  "file": "src/loader.ts",
+  "find": "export const EXPECTED_BONUS_SESSIONS = 53;",
+  "replace": "export const EXPECTED_BONUS_SESSIONS = 54;",
+  "runner": "verify"
+ },
+ {
+  "name": "M24 a buy without the bonus-buy disclosure",
+  "step": 24,
+  "expect": "[FAIL] Step 24",
+  "guard": "GROOMERS-17: every buy carries is_bonus_buy.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; const b = B.find(x => x.mode === 'buy'); b.verifyData._verify_session.is_bonus_buy = false; } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M25 a buy awarding 11 free spins",
+  "step": 25,
+  "expect": "[FAIL] Step 25",
+  "guard": "GROOMERS-17: buys award the published 10 spins.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; const b = B.find(x => x.mode === 'buy' && x.response.feature_status); b.response.feature_status.remaining_spins += 1; } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M26 a free spin credited one cent more",
+  "step": 26,
+  "expect": "[FAIL] Step 26",
+  "guard": "GROOMERS-17: free spins reconcile exactly, against amount_won (USD) since 2026-10-05.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; const b = B.find(x => x.mode === 'free_spin' && parseFloat(x.response.amount_won) > 0); b.response.amount_won = (parseFloat(b.response.amount_won) + 0.01).toFixed(2); } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M27 a multiplier symbol valued off the published set",
+  "step": 27,
+  "expect": "[FAIL] Step 27",
+  "guard": "GROOMERS-13/17: bomb values are in the published set.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; outer: for (const b of B) { if (b.mode !== 'free_spin') continue; for (const r of b.response.rounds) for (const col of r.data.view) for (const c of col) if (c.multiplier_value) { c.multiplier_value = '9'; break outer; } } } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M28 a cascade fill cell altered",
+  "step": 28,
+  "expect": "[FAIL] Step 28",
+  "guard": "GROOMERS-10: every cascade replays byte-exact.",
+  "file": "tests/verify.ts",
+  "find": "const seedMap  = buildSeedMap(ds);",
+  "replace": "{ const B: any[] = ds.bets as any[]; const b = B.find(x => x.mode === 'spin' && x.response.rounds.length > 2); const v = b.response.rounds[2].data.view; const c = v[0][0]; c.symbol = c.symbol === 'symbol_1' ? 'symbol_2' : 'symbol_1'; } // MUTATION\nconst seedMap  = buildSeedMap(ds);",
+  "runner": "verify"
+ },
+ {
+  "name": "M29 the base enumeration edited without re-pin",
+  "step": 29,
+  "expect": "[FAIL] Step 29",
+  "guard": "GROOMERS-27: the base 2^32 artifact is pinned.",
+  "file": "outputs/base-2pow32.json",
+  "find": "\"rtp\": 0.56137603440828709",
+  "replace": "\"rtp\":  0.56137603440828709",
+  "runner": "verify"
+ },
+ {
+  "name": "M30 the bonus enumeration edited without re-pin",
+  "step": 30,
+  "expect": "[FAIL] Step 30",
+  "guard": "GROOMERS-27: the bonus 2^32 artifact is pinned.",
+  "file": "outputs/bonus-2pow32.json",
+  "find": "\"rtp\": 12.153351084085603",
+  "replace": "\"rtp\":  12.153351084085603",
+  "runner": "verify"
+ },
+ {
+  "name": "M31 a session-EV artifact edited without re-pin",
+  "step": 31,
+  "expect": "[FAIL] Step 31",
+  "guard": "GROOMERS-27: the session-EV artifacts are pinned.",
+  "file": "outputs/bonus-session-ev-exact-10.json",
+  "find": "\"initial_spins\"",
+  "replace": " \"initial_spins\"",
+  "runner": "verify"
+ },
+ {
+  "name": "M32 the base RTP forged and re-pinned everywhere",
+  "step": 32,
+  "expect": "[FAIL] Step 32",
+  "guard": "GROOMERS-19: the headline RTP is derived from the enumeration, and the base RTP it starts from must equal the base artifact's own sum / count and histogram mean. Since 14 Oct 2026 (C3) Step 32 no longer compares the total with the 100 % claim (RTP-CLAIM does); the forged base rtp is caught as an artifact that does not reproduce its own headline.",
+  "file": "outputs/base-2pow32.json",
+  "find": "\"rtp\": 0.56137603440828709",
+  "replace": "\"rtp\": 0.50137603440828709",
+  "repin": [
+   {
+    "file": "src/artifact-pins.ts",
+    "find": "0b890eef7153fcdf14c69d8559de8d3f50af558e5464974627db2103ee22d5a1",
+    "hashOf": "outputs/base-2pow32.json"
+   },
+   {
+    "file": "tests/steps/enumeration.ts",
+    "find": "0b890eef7153fcdf14c69d8559de8d3f50af558e5464974627db2103ee22d5a1",
+    "hashOf": "outputs/base-2pow32.json"
+   }
+  ],
+  "runner": "verify"
+ },
+ {
+  "name": "M33 the convergence chart edited without re-pin",
+  "step": 33,
+  "expect": "[FAIL] Step 33",
+  "guard": "GROOMERS-27: every artifact of record is pinned.",
+  "file": "outputs/rtp-convergence.html",
+  "find": "<style>",
+  "replace": "<style >",
+  "runner": "verify"
+ },
+ {
+  "name": "M16b the corruption removed from the threshold negative control",
+  "step": 16,
+  "expect": "NEGATIVE CONTROL VACUOUS",
+  "guard": "GROOMERS-18: a negative control that offers the published rules as the 'corrupted' model is not rejected, and the step must FAIL rather than pass a vacuous control.",
+  "file": "tests/steps/simulation.ts",
+  "find": "rules: { minScatters: 4, spinsByScatters: { ...PUBLISHED_TRIGGER_RULES.spinsByScatters } }",
+  "replace": "rules: { minScatters: 3, spinsByScatters: { ...PUBLISHED_TRIGGER_RULES.spinsByScatters } } /* MUTATION */",
+  "runner": "verify"
+ },
+ {
+  "name": "M34 one served total_multiplier forged to 5001",
+  "step": 34,
+  "expect": "MAX-WIN CAP",
+  "guard": "GROOMERS-14: every served round is held to the operator config's 5000x cap; a violation is disclosed as a FLAG (R2).",
+  "file": "tests/verify.ts",
+  "find": "const ctx: VerifyContext = {",
+  "replace": "(ds.bets[0].response as any).total_multiplier = '5001'; // MUTATION\nconst ctx: VerifyContext = {",
+  "runner": "verify"
+ },
+ {
+  "name": "M35 every initial-deal cell counted as the reel's first symbol",
+  "step": 35,
+  "expect": "live-sample deviation",
+  "guard": "GROOMERS-22: Step 35 reacts to the sample — a symbol census collapsed onto one symbol must turn the step to INFO (informational: not counted, verdict unchanged; the run is rejected by the reproduction gate because the committed Step 35 record changes).",
+  "file": "tests/steps/live-fit.ts",
+  "find": "        counts[r][i]++;",
+  "replace": "        counts[r][0]++; // MUTATION",
+  "runner": "verify"
+ },
+ {
+  "name": "MC3a one setting misses its stated figure: 5 scatters award 8 free spins instead of 12 in the enumeration model",
+  "step": 32,
+  "runner": "test",
+  "expect": "VERDICT: RTP FIGURE OVERSTATED",
+  "expectExit": 5,
+  "regen": [
+   "rtp-table",
+   "record"
+  ],
+  "guard": "FIXPASS2 class C3, 14 Oct 2026: (i) a miss on ONE setting must end RTP FIGURE OVERSTATED, exit 5, never exit 1 or 2. Groomer's Van has one setting (a paid spin), so the change is one paytable cell of it: the free-spin award for 5 scatters (probability about 1.8e-5 per base spin) is lowered 12 → 8 in the map the derived RTP reads (tests/steps/enumeration.ts INITIAL_SPINS_BY_SCATTERS; the captured triggers are held to src/paytable.ts by Step 22, which this edit does not touch): the paid spin returns about 99.88 %, beyond the band under the stated 100 %. Before C3 Step 32 held the derived total to the 100 % claim itself (operator FLAG, exit 2, within 1 pp; FAIL, exit 1, beyond) and pre-empted the rule; it now scores only the derivation. Table and record regenerated in the copy. Runner test = mocha then verify, as npm test runs them.",
+  "file": "tests/steps/enumeration.ts",
+  "find": "const INITIAL_SPINS_BY_SCATTERS: Record<number, number> = { 3: 8, 4: 10, 5: 12, 6: 14 };",
+  "replace": "const INITIAL_SPINS_BY_SCATTERS: Record<number, number> = { 3: 8, 4: 10, 5: 8, 6: 14 }; // MUTATION: 5 scatters award 8"
+ },
+ {
+  "name": "MC3as the same change as MC3a, RTP table NOT regenerated: a stale table is a reproduction failure",
+  "step": 32,
+  "runner": "verify",
+  "expect": "DIFFERS from this run",
+  "expectExit": 1,
+  "guard": "Ruling 14 Oct 2026 (FIXPASS2): a committed RTP table that does not equal the run or its pin is a reproduction failure, exit 1, miss or no miss. MC3a without regenerating the table must end exit 1 with the table reported as differing, never exit 5: the miss is only reported on a consistent package.",
+  "file": "tests/steps/enumeration.ts",
+  "find": "const INITIAL_SPINS_BY_SCATTERS: Record<number, number> = { 3: 8, 4: 10, 5: 12, 6: 14 };",
+  "replace": "const INITIAL_SPINS_BY_SCATTERS: Record<number, number> = { 3: 8, 4: 10, 5: 8, 6: 14 }; // MUTATION: 5 scatters award 8"
+ },
+ {
+  "name": "MC3b the stated figure raised in the claim source: 100 % -> 100.2 %",
+  "step": 32,
+  "runner": "test",
+  "expect": "VERDICT: RTP FIGURE OVERSTATED",
+  "expectExit": 5,
+  "regen": [
+   "rtp-table",
+   "record"
+  ],
+  "guard": "FIXPASS2 class C3, 14 Oct 2026: (ii) the published figure raised where the claim is stated (src/rtp-settings.ts RTP_CLAIM, the game config's \"rtp\": \"100.0000\") to 100.2 %, 0.2 pp above what every setting really returns: every setting misses by more than the 0.1 pp band, so the run must end RTP FIGURE OVERSTATED, exit 5. Table and record regenerated in the copy. Runner test = mocha then verify, as npm test runs them: no unit test, label check or operator-FLAG branch may end the run first.",
+  "file": "src/rtp-settings.ts",
+  "find": "  kind: 'flat',\n  rtp: '1',",
+  "replace": "  kind: 'flat',\n  rtp: '1.002', // MUTATION: stated figure raised"
+ },
+ {
+  "name": "MC3bs the same change as MC3b, RTP table NOT regenerated: a stale table is a reproduction failure",
+  "step": 32,
+  "runner": "verify",
+  "expect": "DIFFERS from this run",
+  "expectExit": 1,
+  "guard": "Ruling 14 Oct 2026 (FIXPASS2): a committed RTP table that does not equal the run or its pin is a reproduction failure, exit 1, miss or no miss. MC3b without regenerating the table must end exit 1 with the table reported as differing, never exit 5: the miss is only reported on a consistent package.",
+  "file": "src/rtp-settings.ts",
+  "find": "  kind: 'flat',\n  rtp: '1',",
+  "replace": "  kind: 'flat',\n  rtp: '1.002', // MUTATION: stated figure raised"
+ }
+]

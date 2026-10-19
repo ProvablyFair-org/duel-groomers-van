@@ -10,10 +10,9 @@
  *                                     view reproduces from
  *                                     deriveTumbleSeed(outcome_index,
  *                                     round_index, tumble_index).
- *   21. Wild Substitution Rule      — wilds contribute to multiple
- *                                     simultaneous clusters (verified
- *                                     against bets where two payable
- *                                     symbols share a wild).
+ *   21. Wild Substitution Rule      — on every round where ≥ 2 symbols pay
+ *                                     and a wild is on the grid, every
+ *                                     cluster's count includes every wild.
  *   22. Bonus Trigger               — every captured feature_triggered=true
  *                                     bet has ≥ 3 scatters on its initial
  *                                     deal; free-spin award matches the
@@ -30,7 +29,7 @@
  *                                     4 scatters → triggers exactly 10
  *                                     free spins (per buy_scatter_count=4
  *                                     and spins_per_scatters[4]=10).
- *   26. Free-Spin Payout Recon      — each free spin's amount_won matches
+ *   26. Free-Spin Payout Recon      — each free spin's amount_won (USD) matches
  *                                     sum(payline base × bomb_multiplier).
  *                                     (Step 7 covers this for non-buy bets;
  *                                     this re-verifies for the bonus
@@ -45,6 +44,11 @@ import { step, type VerifyContext, type StepResult } from './context';
 import { computeOutcomeIndex, deriveTumbleSeed, Pcg32, generateGrid, generateMultipliers, REELS, ROWS } from '../../src/rng';
 import { findClusters, BONUS_CODE, WILD_CODE, MULTIPLIER_CODE } from '../../src/cluster';
 import { freeSpinsAwarded } from '../../src/paytable';
+import { centsOf } from './payouts';
+import {
+  EXPECTED_CLUSTER_PAYLINES, EXPECTED_CASCADE_ROUNDS, EXPECTED_SHARED_WILD_ROUNDS, EXPECTED_BONUS_SESSIONS,
+  EXPECTED_FREE_SPIN_BETS, EXPECTED_MODE_BETS, EXPECTED_BONUS_MULTIPLIER_CELLS, servedNonce,
+} from '../../src/loader';
 
 export function run(ctx: VerifyContext): StepResult[] {
   const results: StepResult[] = [];
@@ -84,11 +88,15 @@ export function run(ctx: VerifyContext): StepResult[] {
         }
       }
     }
+    // BOUND TO THE POPULATION: with every paylines[] emptied this reported 0/0 and PASSED.
+    const pop19 = checked === EXPECTED_CLUSTER_PAYLINES ? '' : `cluster paylines checked ${checked} != ${EXPECTED_CLUSTER_PAYLINES}`;
     results.push(step(19, 'Cluster Pays Anywhere',
-      bad === 0 ? 'PASS' : 'FAIL',
-      `${ok}/${checked} cluster paylines have count = (cells of symbol) + (cells of wild). ` +
+      bad === 0 && !pop19 ? 'PASS' : 'FAIL',
+      `${ok}/${checked} cluster paylines have count = (cells of symbol) + (cells of wild) (src/loader.ts: ${EXPECTED_CLUSTER_PAYLINES}). ` +
       `Confirms the "anywhere with wild substitution" rule.` +
-      (fails.length ? ` Examples: ${fails.join(' | ')}` : '')
+      (pop19 ? ` POPULATION: ${pop19}.` : '') +
+      (fails.length ? ` Examples: ${fails.join(' | ')}` : ''),
+      { checked, matched: ok, mismatched: bad, populationIssue: pop19 || null },
     ));
   }
 
@@ -118,8 +126,13 @@ export function run(ctx: VerifyContext): StepResult[] {
       for (let tIdx = 1; tIdx < rounds.length; tIdx++) {
         const prev = rounds[tIdx - 1].data.view;
         const cur  = rounds[tIdx].data.view;
-        if (!prev || !cur || prev.length !== REELS) continue;
         totalCascades++;
+        if (!prev || !cur || prev.length !== REELS || cur.length !== REELS) {
+          // A cascade with no grid on either side used to be skipped without being counted.
+          mismatched++;
+          if (fails.length < 3) fails.push(`bet ${b.spinId} round ${tIdx}: grid missing or not ${REELS} reels`);
+          continue;
+        }
         let valid = true;
         for (let col = 0; col < REELS && valid; col++) {
           // Survivors from prev round: cells NOT marked removed_on_round = tIdx
@@ -140,50 +153,67 @@ export function run(ctx: VerifyContext): StepResult[] {
         }
       }
     }
+    const pop20 = totalCascades === EXPECTED_CASCADE_ROUNDS ? '' : `cascade rounds checked ${totalCascades} != ${EXPECTED_CASCADE_ROUNDS}`;
     results.push(step(20, 'Tumble Cascade Structural Integrity',
-      mismatched === 0 ? 'PASS' : 'FAIL',
-      `${structurallyOk}/${totalCascades} cascade rounds preserve un-removed cells at the bottom of their column (gravity rule). ` +
-      `${mismatched} gravity violations. ` +
+      mismatched === 0 && !pop20 ? 'PASS' : 'FAIL',
+      `${structurallyOk}/${totalCascades} cascade rounds preserve un-removed cells at the bottom of their column (gravity rule) (src/loader.ts: ${EXPECTED_CASCADE_ROUNDS}). ` +
+      `${mismatched} gravity violations or missing grids. ` +
+      (pop20 ? `POPULATION: ${pop20}. ` : '') +
       `Per-cell RNG verification of NEW drop-fill cells: covered byte-exactly by Step 28 (Cascade RNG Byte-Exact Replay) — R-CASCADE-RNG closed.` +
-      (fails.length ? ` Examples: ${fails.join(' | ')}` : '')
+      (fails.length ? ` Examples: ${fails.join(' | ')}` : ''),
+      { checked: totalCascades, structurallyOk, mismatched, populationIssue: pop20 || null },
     ));
   }
 
   // ── Step 21: Wild Substitution Rule ────────────────────────────────────
-  // Find captured spins where TWO different payable symbols simultaneously
-  // pay using the SAME wild. Confirms the "wilds contribute to every
-  // cluster win" rule from the help panel.
+  // The help-panel rule is "wilds contribute to every cluster win": on a grid where two or more
+  // symbols pay at once, a wild on that grid counts toward EVERY one of those clusters. This step
+  // used to count the rounds where at least two clusters used the wilds and PASS if that count
+  // was above zero — an existence check, FLAG otherwise, with no FAIL branch: a grid on which
+  // one cluster was paid WITHOUT the shared wild was never looked at.
+  //
+  // Now: on every non-tumble round with ≥ 2 distinct paying cluster symbols and ≥ 1 wild, EVERY
+  // cluster payline's count must equal (cells of its symbol) + (all wilds on the grid). One
+  // payline that leaves a wild out is a FAIL, and the number of such rounds must equal the
+  // population declared in src/loader.ts.
   {
-    let twoSymbolWildSpins = 0, examples: string[] = [];
+    let rounds = 0, allCredit = 0, violations = 0;
+    const examples: string[] = [], fails: string[] = [];
     for (const b of ctx.bets) {
       if (b.mode === 'buy') continue;
       for (const round of b.response.rounds) {
         if (round.type === 'tumble') continue;   // tumble rounds reuse the cluster from prior round
-        const distinctSymbols = new Set(round.data.paylines.filter(pl => pl.win_type === 'cluster').map(pl => pl.symbol));
+        const clusters = round.data.paylines.filter(pl => pl.win_type === 'cluster');
+        const distinctSymbols = new Set(clusters.map(pl => pl.symbol));
         if (distinctSymbols.size < 2) continue;
-        // Count wilds on this grid
         let wilds = 0;
         for (let c = 0; c < REELS; c++) for (let r = 0; r < ROWS; r++) if (round.data.view[c][r].symbol === WILD_CODE) wilds++;
         if (wilds === 0) continue;
-        // Check at least one symbol's count = (its non-wild cells) + wilds
-        let usesWilds = 0;
-        for (const pl of round.data.paylines) {
-          if (pl.win_type !== 'cluster') continue;
+        rounds++;
+        const leftOut: string[] = [];
+        for (const pl of clusters) {
           let symCount = 0;
           for (let c = 0; c < REELS; c++) for (let r = 0; r < ROWS; r++) if (round.data.view[c][r].symbol === pl.symbol) symCount++;
-          if (symCount + wilds === pl.count) usesWilds++;
+          if (symCount + wilds !== pl.count) leftOut.push(`${pl.symbol} count ${pl.count} ≠ ${symCount} + ${wilds} wild`);
         }
-        if (usesWilds >= 2) {
-          twoSymbolWildSpins++;
+        if (leftOut.length === 0) {
+          allCredit++;
           if (examples.length < 3) examples.push(`bet ${b.spinId}: ${[...distinctSymbols].join('+')} share ${wilds} wild(s)`);
+        } else {
+          violations++;
+          if (fails.length < 3) fails.push(`bet ${b.spinId}: ${leftOut.join(', ')}`);
         }
       }
     }
+    const pop21 = rounds === EXPECTED_SHARED_WILD_ROUNDS ? '' : `shared-wild rounds ${rounds} != ${EXPECTED_SHARED_WILD_ROUNDS}`;
     results.push(step(21, 'Wild Substitution Rule',
-      twoSymbolWildSpins > 0 ? 'PASS' : 'FLAG',
-      `${twoSymbolWildSpins} captured spins have ≥ 2 simultaneous payable-symbol clusters AND a shared wild contributing to all of them. ` +
-      `${twoSymbolWildSpins > 0 ? 'Confirms the help panel rule "wilds contribute to every cluster win" — a single wild lifts multiple symbols simultaneously.' : 'No multi-cluster-with-shared-wild spins observed in this dataset (would still be valid; just absent).'}` +
-      (examples.length ? ` Examples: ${examples.join(' | ')}` : '')
+      violations === 0 && !pop21 ? 'PASS' : 'FAIL',
+      `${allCredit}/${rounds} rounds with ≥ 2 simultaneous paying cluster symbols and ≥ 1 wild credit every wild to EVERY cluster (src/loader.ts: ${EXPECTED_SHARED_WILD_ROUNDS} such rounds). ` +
+      `${violations} rounds pay a cluster whose count leaves out a wild on the grid. Rule tested: "wilds contribute to every cluster win".` +
+      (pop21 ? ` POPULATION: ${pop21}.` : '') +
+      (fails.length ? ` Violations: ${fails.join(' | ')}` : '') +
+      (examples.length ? ` Examples: ${examples.join(' | ')}` : ''),
+      { rounds, allWildsCreditedToEveryCluster: allCredit, violations, populationIssue: pop21 || null },
     ));
   }
 
@@ -232,10 +262,11 @@ export function run(ctx: VerifyContext): StepResult[] {
         }
       }
     }
-    const status: 'PASS' | 'FAIL' = (mismatched === 0 && gridScatterMismatched === 0) ? 'PASS' : 'FAIL';
+    const pop22 = triggers === EXPECTED_BONUS_SESSIONS ? '' : `trigger events ${triggers} != ${EXPECTED_BONUS_SESSIONS}`;
+    const status: 'PASS' | 'FAIL' = (mismatched === 0 && gridScatterMismatched === 0 && !pop22) ? 'PASS' : 'FAIL';
     results.push(step(22, 'Bonus Trigger',
       status,
-      `${triggers} captured trigger events. ${triggers - mismatched}/${triggers} match the published spins_per_scatters table {3→8, 4→10, 5→12, 6→14}. ` +
+      `${triggers} captured trigger events (src/loader.ts: ${EXPECTED_BONUS_SESSIONS}). ${pop22 ? `POPULATION: ${pop22}. ` : ''}${triggers - mismatched}/${triggers} match the published spins_per_scatters table {3→8, 4→10, 5→12, 6→14}. ` +
       `Independent grid cross-check: ${triggers - gridScatterMismatched}/${triggers} captured triggers have a final-grid scatter count matching the operator-reported trigger_data.scatter_count (catches dual-field inflation).` +
       (fails.length ? ` Examples: ${fails.join(' | ')}` : '')
     ));
@@ -253,6 +284,7 @@ export function run(ctx: VerifyContext): StepResult[] {
     const cap = ctx.paytable.maxBonusRetriggers;
     const sessionRetriggers = new Map<number, number>();
     const violations: string[] = [];
+    let capViolations = 0;
 
     // Count every session start (buy or organic trigger).
     for (const b of ctx.bets) {
@@ -266,12 +298,20 @@ export function run(ctx: VerifyContext): StepResult[] {
     // scatters never participate in clusters, the post-final-cascade view
     // contains the cumulative scatter count across all cascades). A free
     // spin with ≥ minScattersToTrigger scatters is a retrigger event.
+    let freeSpinsExamined = 0, unattached = 0, noGrid = 0;
     for (const b of ctx.bets) {
-      if (b.mode !== 'free_spin' || !b.triggerSpinId) continue;
+      if (b.mode !== 'free_spin') continue;
+      // A free spin with no session to belong to, or no grid to count scatters on, used to be
+      // skipped without being counted. Both are now counted and FAIL the step.
+      if (!b.triggerSpinId || !sessionRetriggers.has(b.triggerSpinId)) {
+        unattached++;
+        if (violations.length < 3) violations.push(`free spin ${b.spinId}: triggerSpinId ${b.triggerSpinId} is not a captured session`);
+        continue;
+      }
       const rounds = b.response.rounds;
-      if (!rounds || rounds.length === 0) continue;
-      const finalView = rounds[rounds.length - 1].data?.view;
-      if (!finalView) continue;
+      const finalView = rounds && rounds.length > 0 ? rounds[rounds.length - 1].data?.view : undefined;
+      if (!finalView) { noGrid++; continue; }
+      freeSpinsExamined++;
       let scatters = 0;
       for (let c = 0; c < REELS; c++) {
         for (let r = 0; r < ROWS; r++) {
@@ -283,18 +323,26 @@ export function run(ctx: VerifyContext): StepResult[] {
         const sid = b.triggerSpinId;
         const n = (sessionRetriggers.get(sid) ?? 0) + 1;
         sessionRetriggers.set(sid, n);
-        if (n > cap) violations.push(`session ${sid}: ${n} retriggers (cap ${cap})`);
+        if (n > cap) { capViolations++; violations.push(`session ${sid}: ${n} retriggers (cap ${cap})`); }
         if (observed.length < 3) observed.push(`bet ${b.spinId}: ${scatters} scatters in final cascade view (retrigger)`);
       }
     }
 
-    const status: 'PASS' | 'FAIL' = violations.length === 0 ? 'PASS' : 'FAIL';
+    const pop23: string[] = [];
+    if (sessions !== EXPECTED_BONUS_SESSIONS) pop23.push(`sessions ${sessions} != ${EXPECTED_BONUS_SESSIONS}`);
+    if (freeSpinsExamined !== EXPECTED_FREE_SPIN_BETS) pop23.push(`free spins examined ${freeSpinsExamined} != ${EXPECTED_FREE_SPIN_BETS}`);
+    if (unattached > 0) pop23.push(`${unattached} free spins attached to no captured session`);
+    if (noGrid > 0) pop23.push(`${noGrid} free spins with no grid`);
+    const status: 'PASS' | 'FAIL' = violations.length === 0 && pop23.length === 0 ? 'PASS' : 'FAIL';
     results.push(step(23, 'Retrigger Behaviour',
       status,
-      `${sessions} bonus sessions captured. ${retriggers} retrigger events observed (free spins in which the cumulative scatter count across all cascades reached ≥ ${ctx.paytable.minScattersToTrigger}). ` +
-      `Per-session retrigger cap = ${cap} (operator config). ${violations.length} sessions exceeded the cap.` +
+      `${sessions} bonus sessions captured; ${freeSpinsExamined} free spins examined (src/loader.ts: ${EXPECTED_BONUS_SESSIONS} sessions, ${EXPECTED_FREE_SPIN_BETS} free spins). ` +
+      (pop23.length ? `POPULATION: ${pop23.join('; ')}. ` : '') +
+      `${retriggers} retrigger events observed (free spins in which the cumulative scatter count across all cascades reached ≥ ${ctx.paytable.minScattersToTrigger}). ` +
+      `Per-session retrigger cap = ${cap} (operator config). ${capViolations} sessions exceeded the cap.` +
       (violations.length ? ` Violations: ${violations.slice(0, 3).join(' | ')}` : '') +
-      (observed.length ? ` Examples: ${observed.join(' | ')}` : '')
+      (observed.length ? ` Examples: ${observed.join(' | ')}` : ''),
+      { sessions, freeSpinsExamined, unattachedFreeSpins: unattached, freeSpinsWithoutGrid: noGrid, retriggers, populationIssues: pop23 },
     ));
   }
 
@@ -327,9 +375,10 @@ export function run(ctx: VerifyContext): StepResult[] {
         if (fails.length < 3) fails.push(`bet ${b.spinId} is_bonus_buy=${isBonusBuy}, noClusterPaylines=${noClusterPaylines}`);
       }
     }
+    const pop24 = totalBuys === EXPECTED_MODE_BETS.buy ? '' : `buys ${totalBuys} != ${EXPECTED_MODE_BETS.buy}`;
     results.push(step(24, 'Cosmetic Buy-Spin Disclosure',
-      mismatched === 0 ? 'PASS' : 'FAIL',
-      `${totalBuys} buy bets captured. ${ok}/${totalBuys} carry the operator's bonus-buy disclosure (verifyData._verify_session.is_bonus_buy=true) AND have no cluster paylines (only the guaranteed 4-scatter scatter pay; cosmetic grid never forms clusters, per operator disclosure).` +
+      mismatched === 0 && !pop24 ? 'PASS' : 'FAIL',
+      `${totalBuys} buy bets captured (src/loader.ts: ${EXPECTED_MODE_BETS.buy}). ${pop24 ? `POPULATION: ${pop24}. ` : ''}${ok}/${totalBuys} carry the operator's bonus-buy disclosure (verifyData._verify_session.is_bonus_buy=true) AND have no cluster paylines (only the guaranteed 4-scatter scatter pay; cosmetic grid never forms clusters, per operator disclosure).` +
       (fails.length ? ` Examples: ${fails.join(' | ')}` : '')
     ));
   }
@@ -349,8 +398,8 @@ export function run(ctx: VerifyContext): StepResult[] {
       if (awarded === 10) exact10FreeSpins++;
     }
     results.push(step(25, 'Buy-Bonus Structure',
-      exact4Scatters === buys.length && exact10FreeSpins === buys.length ? 'PASS' : 'FAIL',
-      `${buys.length} buys captured. ${exact4Scatters}/${buys.length} display exactly 4 scatters (per buy_scatter_count=${ctx.config.features[0]?.metadata?.buy_scatter_count ?? 4}). ${exact10FreeSpins}/${buys.length} award exactly 10 free spins (per spins_per_scatters[4]=10).` +
+      exact4Scatters === buys.length && exact10FreeSpins === buys.length && buys.length === EXPECTED_MODE_BETS.buy ? 'PASS' : 'FAIL',
+      `${buys.length} buys captured (src/loader.ts: ${EXPECTED_MODE_BETS.buy}${buys.length === EXPECTED_MODE_BETS.buy ? '' : ' — POPULATION MISMATCH'}). ${exact4Scatters}/${buys.length} display exactly 4 scatters (per buy_scatter_count=${ctx.config.features[0]?.metadata?.buy_scatter_count ?? 4}). ${exact10FreeSpins}/${buys.length} award exactly 10 free spins (per spins_per_scatters[4]=10).` +
       (mismatch.length ? ` Examples: ${mismatch.join(' | ')}` : '')
     ));
   }
@@ -364,34 +413,51 @@ export function run(ctx: VerifyContext): StepResult[] {
     for (const b of ctx.bets) {
       if (b.mode !== 'free_spin') continue;
       checked++;
-      let summed = 0;
+      // EXACT IN INTEGER CENTS (2026-09-26) — was ±max(1e-6, 0.05 %) on parsed doubles. Every one of
+      // the 475 free spins reconciles to the cent on the pinned dataset (measured), so no exception.
+      // IN USD SINCE 2026-10-05: the paylines are USD amounts, so they are compared with amount_won (USD),
+      // as Step 7 now does; until then this read amount_won_coins, the coins credit (Step 7 checks that
+      // field against the conversion rule). Measured on the pinned dataset: 475 / 475 either way.
+      let summed: bigint | null = 0n;
       for (const round of b.response.rounds) {
         for (const pl of round.data.paylines) {
-          const base = parseFloat(pl.base_payout_currency || pl.payout_currency || '0');
+          const base = centsOf(pl.base_payout_currency || pl.payout_currency || '0');
           const bomb = pl.bomb_multiplier ?? 0;
-          summed += base * Math.max(bomb, 1);
+          if (base === null || summed === null || !Number.isInteger(bomb)) { summed = null; continue; }
+          summed += base * BigInt(Math.max(bomb, 1));
         }
       }
-      const reported = parseFloat(b.response.amount_won_coins);
-      const diff = Math.abs(summed - reported);
-      if (diff < 1e-6 || diff < 0.0005 * reported) ok++;
+      const reported = centsOf(b.response.amount_won);
+      if (summed !== null && reported !== null && summed === reported) ok++;
       else {
         bad++;
-        if (fails.length < 3) fails.push(`bet ${b.spinId}: sum ${summed.toFixed(4)} vs amount_won_coins ${reported.toFixed(4)}`);
+        if (fails.length < 3) fails.push(`bet ${b.spinId}: sum ${summed === null ? 'off-grid' : `${summed}¢`} vs amount_won ${reported === null ? 'off-grid' : `${reported}¢`}`);
       }
     }
+
+    // BOUND TO THE POPULATION: with the free spins removed this reported 0/0 and PASSED. The
+    // field compared is amount_won (USD); the sentence names the field the code reads.
+    const pop26 = checked === EXPECTED_FREE_SPIN_BETS ? '' : `free spins checked ${checked} != ${EXPECTED_FREE_SPIN_BETS}`;
     results.push(step(26, 'Free-Spin Payout Reconciliation',
-      bad === 0 ? 'PASS' : 'FAIL',
-      `${ok}/${checked} captured free spins reconcile their amount_won to sum(base_payout × max(bomb_multiplier, 1)) across paylines. ${bad} mismatched.` +
-      (fails.length ? ` Examples: ${fails.join(' | ')}` : '')
+      bad === 0 && !pop26 ? 'PASS' : 'FAIL',
+      `${ok}/${checked} captured free spins reconcile amount_won (USD) to sum(base_payout × max(bomb_multiplier, 1)) across paylines exactly in integer cents (src/loader.ts: ${EXPECTED_FREE_SPIN_BETS}). ${bad} mismatched.` +
+      (pop26 ? ` POPULATION: ${pop26}.` : '') +
+      (fails.length ? ` Examples: ${fails.join(' | ')}` : ''),
+      { checked, reconciled: ok, mismatched: bad, populationIssue: pop26 || null },
     ));
   }
 
   // ── Step 27: Bonus Multiplier Symbol ───────────────────────────────────
-  // Multiplier symbols only appear in bonus_game spins; never in base.
+  // Multiplier symbols only appear in bonus_game spins, never in base, and every value shown
+  // must be one the operator publishes. The step used to print the observed values next to
+  // the published set and never compare them — a value outside the published set passed. Now
+  // an unpublished value, a multiplier cell with no value, a base-game sighting, or a sighting
+  // count different from src/loader.ts is a FAIL. A published value that live play never showed
+  // is reported, not failed: live play is not expected to reach every value.
   {
     let baseGameMultiplierSightings = 0;
     let bonusGameMultiplierSightings = 0;
+    let missingValue = 0;
     const observedValues = new Set<string>();
     for (const b of ctx.bets) {
       const isBonus = b.response.spin_type === 'bonus_game' || b.mode === 'free_spin';
@@ -403,6 +469,7 @@ export function run(ctx: VerifyContext): StepResult[] {
               if (isBonus) {
                 bonusGameMultiplierSightings++;
                 if (cell.multiplier_value) observedValues.add(cell.multiplier_value);
+                else missingValue++;
               } else {
                 baseGameMultiplierSightings++;
               }
@@ -411,14 +478,29 @@ export function run(ctx: VerifyContext): StepResult[] {
         }
       }
     }
-    const expectedValues = Array.from(ctx.paytable.multiplierValues.keys()).map(String).sort((a, b) => parseInt(a) - parseInt(b));
-    const observedSorted = [...observedValues].sort((a, b) => parseInt(a) - parseInt(b));
+    const byNum = (a: string, b: string) => parseFloat(a) - parseFloat(b);
+    const expectedValues = Array.from(ctx.paytable.multiplierValues.keys()).map(String).sort(byNum);
+    const publishedNums = new Set(expectedValues.map(v => parseFloat(v)));
+    const observedSorted = [...observedValues].sort(byNum);
+    // Compare numerically: the grid serves the value as a string ("2"), the paytable as a key.
+    const unpublished = observedSorted.filter(v => !publishedNums.has(parseFloat(v)));
+    const observedNums = new Set(observedSorted.map(v => parseFloat(v)));
+    const neverSeen = expectedValues.filter(v => !observedNums.has(parseFloat(v)));
+    const issues: string[] = [];
+    if (baseGameMultiplierSightings > 0) issues.push(`${baseGameMultiplierSightings} multiplier symbols in base_game`);
+    if (unpublished.length > 0) issues.push(`values not in the published set: {${unpublished.join(', ')}}`);
+    if (missingValue > 0) issues.push(`${missingValue} multiplier cells carry no value`);
+    if (bonusGameMultiplierSightings !== EXPECTED_BONUS_MULTIPLIER_CELLS) issues.push(`bonus-game multiplier cells ${bonusGameMultiplierSightings} != ${EXPECTED_BONUS_MULTIPLIER_CELLS} (src/loader.ts)`);
     results.push(step(27, 'Bonus Multiplier Symbol',
-      baseGameMultiplierSightings === 0 ? 'PASS' : 'FAIL',
-      `Multiplier symbol appearances: ${bonusGameMultiplierSightings} in bonus_game (expected), ${baseGameMultiplierSightings} in base_game (must be 0). ` +
+      issues.length === 0 ? 'PASS' : 'FAIL',
+      `Multiplier symbol appearances: ${bonusGameMultiplierSightings} in bonus_game (src/loader.ts: ${EXPECTED_BONUS_MULTIPLIER_CELLS}), ${baseGameMultiplierSightings} in base_game (must be 0). ` +
       `Observed multiplier values across all bonus spins: {${observedSorted.join(', ')}}. ` +
       `Published values: {${expectedValues.join(', ')}}. ` +
-      `Mode separation confirms multiplier_bombs_applies_to: 'feature' rule.`
+      `${unpublished.length} observed value(s) outside the published set (must be 0); ${neverSeen.length} published value(s) never observed${neverSeen.length ? ` ({${neverSeen.join(', ')}}, reported, not scored)` : ''}. ` +
+      `Mode separation confirms multiplier_bombs_applies_to: 'feature' rule.` +
+      (issues.length ? ` FAILED: ${issues.join('; ')}.` : ''),
+      { bonusGameSightings: bonusGameMultiplierSightings, baseGameSightings: baseGameMultiplierSightings, missingValue,
+        observedValues: observedSorted, publishedValues: expectedValues, unpublishedObserved: unpublished, publishedNeverObserved: neverSeen, issues },
     ));
   }
 
@@ -458,8 +540,7 @@ export function run(ctx: VerifyContext): StepResult[] {
 
       // Resolve (outcomeIndex, roundIndex). Use verifyData when present
       // (covers free spins where the trigger nonce is shared across the
-      // session); otherwise compute from (server_seed, client_seed, nonce).
-      // Try (nonce, nonce+1, nonce-1) to handle capture-retry artefacts.
+      // session); otherwise compute from (server_seed, client_seed, served nonce).
       let outcomeIndex: number, roundIndex: number;
       const vd: any = b.verifyData;
       if (vd?.outcome_index_hex) {
@@ -469,18 +550,16 @@ export function run(ctx: VerifyContext): StepResult[] {
         const hash = (b as any).activeAtSpin?.server_seed_hashed;
         const serverSeed = hash ? ctx.seedMap.get(hash) : undefined;
         const clientSeed = (b as any).activeAtSpin?.client_seed ?? '';
-        const nonceBase  = vd?.nonce ?? (b as any).nonce ?? (b as any).activeAtSpin?.nonce;
+        // The SERVED nonce, exact (the ±1 search this used until 2026-09-26 is gone): the verify
+        // payload's, else the recorded one or the correction declared by spin id in src/loader.ts.
+        const nonceBase  = vd?.nonce ?? servedNonce(b as any);
         if (!serverSeed || !clientSeed || nonceBase == null) { spinsSkipped++; continue; }
         roundIndex = vd?.round_index ?? 0;
-        // Reproduce round-0 view to lock the right nonce (handle ±1 artefacts)
         let chosen: number | undefined = undefined;
-        for (const dn of [0, 1, -1]) {
-          const tryN = nonceBase + dn;
-          if (tryN < 0) continue;
-          const oi  = computeOutcomeIndex(serverSeed, clientSeed, tryN);
+        {
+          const oi  = computeOutcomeIndex(serverSeed, clientSeed, nonceBase);
           const tseed = deriveTumbleSeed(oi, roundIndex, 0);
           const grid  = generateGrid(new Pcg32(tseed), tables.weights);
-          // compare to round-0 view
           let match = true;
           const r0v = rounds[0].data.view;
           for (let col = 0; col < REELS && match; col++) {
@@ -488,7 +567,7 @@ export function run(ctx: VerifyContext): StepResult[] {
               if (tables.codes[grid[col][row]] !== r0v[col][row].symbol) match = false;
             }
           }
-          if (match) { chosen = oi; break; }
+          if (match) chosen = oi;
         }
         if (chosen === undefined) { spinsSkipped++; continue; }
         outcomeIndex = chosen;
@@ -587,8 +666,14 @@ export function run(ctx: VerifyContext): StepResult[] {
     // Guard: PASS requires non-zero coverage. A dataset with all cascade
     // spins skipped (e.g. missing outcome_index everywhere) would trivially
     // PASS the byte-exact check with 0/0 reproductions otherwise.
+    // BOUND TO THE POPULATION (2026-09-26): a spin whose round-0 grid did not reproduce at its served
+    // nonce used to be counted as "skipped" and dropped silently. Every cascade round src/loader.ts
+    // declares must be replayed, and the only permitted skips are the declared bonus buys.
+    const pop28: string[] = [];
+    if (cascadesChecked !== EXPECTED_CASCADE_ROUNDS) pop28.push(`cascades replayed ${cascadesChecked} != ${EXPECTED_CASCADE_ROUNDS}`);
+    if (spinsSkipped !== EXPECTED_MODE_BETS.buy) pop28.push(`spins skipped ${spinsSkipped} != the ${EXPECTED_MODE_BETS.buy} declared buys`);
     const status = (
-      spinsWithCascades > 0 && cascadesChecked > 0 &&
+      spinsWithCascades > 0 && pop28.length === 0 &&
       cellMismatches === 0 && multMismatches === 0
     ) ? 'PASS' : 'FAIL';
     results.push(step(28, 'Cascade RNG Byte-Exact Replay',
@@ -596,9 +681,9 @@ export function run(ctx: VerifyContext): StepResult[] {
       `${cascadesChecked} captured cascades replayed via deriveTumbleSeed(outcome_index, round_index, tumble_index) ` +
       `→ fresh PCG32 → generateGrid + gravity-fill. ` +
       `${cellsChecked - cellMismatches}/${cellsChecked} cells reproduce byte-exact. ` +
-      `${multChecked - multMismatches}/${multChecked} newly-generated cascade multiplier cells byte-exact; ` +
-      `all multiplier-symbol values across the dataset lie within the published set and payouts reconcile (Step 7). ` +
-      `${spinsWithCascades} spins exercised; ${spinsSkipped} skipped (buys / no outcome_index). ` +
+      `${multChecked - multMismatches}/${multChecked} captured multiplier values reproduce byte-exact. ` +
+      `${spinsWithCascades} spins exercised; ${spinsSkipped} skipped (the declared bonus buys; bound to EXPECTED_MODE_BETS.buy, cascades bound to EXPECTED_CASCADE_ROUNDS). ` +
+      (pop28.length ? `POPULATION: ${pop28.join('; ')}. ` : '') +
       (examples.length ? `Examples of mismatches: ${examples.join(' | ')}` : 'Closes R-CASCADE-RNG.')
     ));
   }

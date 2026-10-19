@@ -78,10 +78,6 @@ function spinPayout(outcomeIndex: number, paytable: Paytable, condition: Conditi
     const clusters = findClusters(codeGrid);
     const removedSet = new Set<number>();
     for (const c of clusters) {
-      // `paytable.minClusterSize` = 4 (operator's `rules.min_cluster_size`).
-      // Effective PAYING minimum is 8 — per-symbol tables have no entries
-      // for sizes 4–7, so `clusterMultiplier` returns 0 there and the
-      // `baseMult <= 0` guard below skips removal.
       if (c.size < paytable.minClusterSize) continue;
       const baseMult = clusterMultiplier(paytable, condition, c.symbol, c.size);
       if (baseMult <= 0) continue;
@@ -131,10 +127,8 @@ function spinPayout(outcomeIndex: number, paytable: Paytable, condition: Conditi
   }
 
   // scatter pay (base game only) + bomb multiplier (bonus game only)
-  // Gate on the operator-published minScattersToTrigger; paytable absence of
-  // entries below that count zeros the contribution naturally.
   let scatterPay = 0;
-  if (condition === 'base_game' && cumulativeScatters >= paytable.minScattersToTrigger) {
+  if (condition === 'base_game' && cumulativeScatters >= 3) {
     scatterPay = scatterMultiplier(paytable, condition, cumulativeScatters);
   }
   const bombMult = condition === 'bonus_game' ? Math.max(cumulativeBombs, 1) : 1;

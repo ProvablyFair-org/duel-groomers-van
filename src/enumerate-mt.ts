@@ -10,8 +10,8 @@
  * wins, max_payout, rtp, win_rate, elapsed_sec, hist_granularity=0.01,
  * histogram, scatter_histogram, joint_histogram) so that
  * `scripts/cpu-cuda-parity.ts` can verify the CPU enumeration matches the
- * committed CUDA output within documented numerical tolerances over the
- * full 2³² output space.
+ * committed CUDA output byte-for-byte (structurally) over the full 2³²
+ * output space.
  *
  * Usage:
  *   ts-node src/enumerate-mt.ts --from 0 --to 1000000 --condition base --workers 8
@@ -104,10 +104,6 @@ function spinPayout(outcomeIndex: number, paytable: Paytable, condition: Conditi
     const clusters = findClusters(codeGrid);
     const removedSet = new Set<number>();
     for (const c of clusters) {
-      // `paytable.minClusterSize` = 4 (operator's `rules.min_cluster_size`).
-      // Effective PAYING minimum is 8 — per-symbol tables have no entries
-      // for sizes 4–7, so `clusterMultiplier` returns 0 there and the
-      // `baseMult <= 0` guard below skips removal.
       if (c.size < paytable.minClusterSize) continue;
       const baseMult = clusterMultiplier(paytable, condition, c.symbol, c.size);
       if (baseMult <= 0) continue;
@@ -153,10 +149,8 @@ function spinPayout(outcomeIndex: number, paytable: Paytable, condition: Conditi
     cumulativeScatters = countScatters(codeGrid);
   }
 
-  // Gate on the operator-published minScattersToTrigger; paytable absence of
-  // entries below that count zeros the contribution naturally.
   let scatterPay = 0;
-  if (condition === 'base_game' && cumulativeScatters >= paytable.minScattersToTrigger) {
+  if (condition === 'base_game' && cumulativeScatters >= 3) {
     scatterPay = scatterMultiplier(paytable, condition, cumulativeScatters);
   }
   const bombMult = condition === 'bonus_game' ? Math.max(cumulativeBombs, 1) : 1;

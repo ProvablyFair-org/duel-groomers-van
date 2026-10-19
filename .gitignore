@@ -3,6 +3,24 @@ dist/
 outputs/*.json
 !outputs/.gitkeep
 !outputs/rtp-convergence.html
+# Canonical 2^32 enumeration artifacts — committed for instant verifiability.
+# Anyone with these + the matching hash can verify the audit's RTP claim
+# in seconds without re-running the enumeration. See MANIFEST.md#reproduce-the-audit.
+!outputs/base-2pow32.json
+!outputs/bonus-2pow32.json
+!outputs/bonus-session-ev.json
+!outputs/cpu-base-2pow32.json
+!outputs/cpu-bonus-2pow32.json
+!outputs/bonus-session-ev-exact.json
+!outputs/bonus-session-ev-exact-8.json
+!outputs/bonus-session-ev-exact-10.json
+!outputs/bonus-session-ev-exact-12.json
+!outputs/bonus-session-ev-exact-14.json
+!outputs/bonus-2pow32-uncapped.json
+
+# CUDA build artifacts (platform-specific binary; rebuilt by scripts/build-cuda.sh)
+cuda/gv_cuda
+cuda/*.o
 results/*.json
 !results/.gitkeep
 results/merged/*.json
@@ -20,3 +38,18 @@ data/*.json
 # old smoke variants — only the final one ships
 data/groomers-van-smoke-test-1778099*.json
 data/smoke-3-*.json
+
+# artifacts of record — the verifier scores a run against these
+!outputs/verification-results.json
+# Monte Carlo cross-check read by Steps 16–18 and pinned by SHA-256 in src/artifact-pins.ts (Step 33).
+# Refreshed only by `PF_EMIT=1 npm run simulate`, re-pinned in the same commit.
+!outputs/simulation-results.json
+
+# run products — verify and simulate write them fresh each run; the committed artifacts are pinned
+outputs/run/
+!outputs/rtp-claim-table.json
+
+# operator documents are never part of the package: Duel's written answers (evidence E03/D05) are held
+# on file by ProvablyFair.org, outside this package; these lines keep a copy dropped here from being committed
+/Groomer's Van audit questions.pdf
+/*.pdf

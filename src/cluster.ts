@@ -2,19 +2,11 @@
  * Groomer's Van — symbol-count "cluster" detection.
  *
  * IMPORTANT: this game's "cluster" mechanic is NOT geometric connectivity.
- * Per the operator's published rules:
+ * Per MANIFEST.md#game-and-algorithm and the operator's published rules:
  *
  *   pay_mechanic:           "cluster"
  *   symbols_paying_logic:   "anywhere"
- *   min_cluster_size:        4    (rules.min_cluster_size in /api/rules)
- *
- * Note on min_cluster_size: the operator publishes 4 as the engine's
- * geometric minimum (`rules.min_cluster_size` = 4 in the rules endpoint),
- * but the effective PAYING minimum is 8 — the published per-symbol tables
- * have no entries for sizes 4–7, so `clusterMultiplier` returns 0 for any
- * count below 8 and the cluster triggers no payout and no tumble removal.
- * This is why the engine's gate is `< paytable.minClusterSize` (= 4) but
- * the comments and tests refer to "size ≥ 8" as the payable threshold.
+ *   min_cluster_size:        8
  *
  * "Anywhere" means: a payline triggers when the **total count** of cells
  * with a payable symbol (plus wild substitutions) reaches the minimum

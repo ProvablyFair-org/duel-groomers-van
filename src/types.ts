@@ -3,7 +3,10 @@
  *
  * These mirror the live API shapes verbatim. Field names are kept exactly
  * as the operator returns them (snake_case) so the verifier can compare
- * raw responses without transformations.
+ * raw responses without transformations. Two fields were filled in at export,
+ * not when their record was written: SeedRotation.seed.serverSeed and
+ * GVBet.verifyData were attached by the capture's save step from post-rotation
+ * /verify responses (MANIFEST, Dataset and capture).
  */
 
 // ── Card / cell payload ─────────────────────────────────────────────────────
@@ -90,7 +93,7 @@ export interface SpinResponse {
   rounds:                Round[];
   feature_status:        FeatureStatus | null;
   max_win_reached:       boolean;
-  edge_multiplier:       string;        // "1" at zero-edge bracket; > 1 at higher stakes
+  edge_multiplier:       string;        // "1" on every captured bet (Zero Edge); other values not observed
   amount_won_coins:      string;
   amount_won:            string;
 }

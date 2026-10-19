@@ -1,0 +1,86 @@
+{
+  "auditId": "PF-2026-DL10",
+  "game": "groomers-van",
+  "casino": "duel",
+  "release": "v1.1.0",
+  "framework": "1.1",
+  "simulation": {
+    "seeding": "pinned",
+    "seedSource": "src/simulate.ts MASTER_SEED 'pf-audit-groomers-van-v1' (PRNG seed = HMAC-SHA256(masterSeed, 'groomers-van-pass1'))",
+    "attestation": "npm test scores the committed, pinned outputs/simulation-results.json (Steps 16-18) and does not regenerate it; npm run test:full regenerates the Monte Carlo into outputs/run/ and the verifier field-diffs it against the committed artifact at the reproduction tolerance (outputs/run/diff.json)"
+  },
+  "runtime": {
+    "command": "npm test",
+    "measured": [
+      {
+        "date": "2026-09-28",
+        "machine": "Apple M2 Max",
+        "cores": 12,
+        "node": "22.23.1",
+        "wallSeconds": 3.737,
+        "by": "time npm test"
+      }
+    ]
+  },
+  "datasetSha256": "3034cb1284bc1a87d82a0d8f914b19d7f1a8f16894ffe601242bd29e3873b967",
+  "artifacts": {
+    "data/groomers-van-smoke-test-1778204681017.json.gz": "60a23a2b137613b2e0e23d0792773d7d9c5b37cfd24fd6a623aafdbb3d98e1ea",
+    "data/raw/client-seed-snapshot.json": "e0b1e4a62e78f28ed13c57d6cb3ce6885ee98a04b7c051b1e46b526c88b3e3db",
+    "data/raw/groomers-van-config-v1.4.json": "e08f41da9a1d2ab4a634e3f14dc2d52858520dc9620c327599cac1e5c09c2b87",
+    "data/raw/paytable-extracted-from-help.json": "d10e08fa0887c07d9123bd0d815a14fd61e74dee4cb2c0e2ed76efe56a98ec9a",
+    "data/raw/paytable-from-rules-endpoint.json": "c3479bf62ee9ed45896506db8972a9b338b693345db47633687af440b27ffcd1",
+    "data/raw/spin-1835724-request.json": "1586b652311511643cdba65f39f90b86516b11e624aaf3017e8d5c9f58b0711b",
+    "data/raw/spin-1835724-response.json": "e1ec2db3e732f96aef23c232767abd8972655656ad21adbac67381be410089ea",
+    "data/raw/spin-1835725-request.json": "1586b652311511643cdba65f39f90b86516b11e624aaf3017e8d5c9f58b0711b",
+    "data/raw/spin-1835725-response.json": "eef6c74abfb51d92c7ceb6523c96ec8d93032c5c16317412d0a84349c978eb54",
+    "data/raw/slots-2026-10-05.json": "f112728a0343c0cf8f6ed05d1801fc828be34b99bbaafdf1b20005534a4f7dc6",
+    "data/raw/slots-2026-10-05.json.meta.json": "ea4154befbb3c0c5304dfd631650338802fa93f0c8523c115dbce66b37817438",
+    "data/raw/slots-groomers-van-rules-2026-10-05.json": "c3479bf62ee9ed45896506db8972a9b338b693345db47633687af440b27ffcd1",
+    "data/raw/slots-groomers-van-rules-2026-10-05.json.meta.json": "d436639e2889ba3bb8ea485d68cae8082c347ff1a86cfbaabc1a67c9a3573045",
+    "outputs/base-2pow32.json": "0b890eef7153fcdf14c69d8559de8d3f50af558e5464974627db2103ee22d5a1",
+    "outputs/bonus-2pow32-uncapped.json": "aff462d1f8104584d830ba2ab849657c0109f90e6461de79c043f89f77afe1a3",
+    "outputs/bonus-2pow32.json": "e878256256cf59edb458d6ec0f5b1cc5ea6e2d45764636676362345d4cdfdb14",
+    "outputs/bonus-session-ev-exact-10.json": "a03b4e024b1182ad62e64739e47069b2a4d302430f9153a9d1f26d8104072257",
+    "outputs/bonus-session-ev-exact-12.json": "334e55e3183065cd0e3a0e5157f11d8d37e5f1ad435e8d4d91083028c8905fda",
+    "outputs/bonus-session-ev-exact-14.json": "79236fe8facf3b6ab33238a51a121f333f80bb38e0ec9361a5585fd81bc97461",
+    "outputs/bonus-session-ev-exact-8.json": "15a11d74e7fc10e4426bb013e4d5e1f9204e2620cf5307f51ba8f7c01b4945e2",
+    "outputs/bonus-session-ev-exact.json": "139ea735aa4fd7f6b59f87fcb5538a9381b7261d26101aba80e7c7d58bcb0e2a",
+    "outputs/bonus-session-ev.json": "3825f47da8873725071dae171df82462e395669454180303ef04258ce3692125",
+    "outputs/cpu-base-2pow32.json": "2007a70eef5e6f6ebb23eb50eb1df0e7967a41b308fd7f49f330e6b7f3758ab7",
+    "outputs/cpu-bonus-2pow32.json": "7f4b0f588723e48b8552e1dd240f1045a4df5144e4193736f3100faae8f8b086",
+    "outputs/rtp-convergence.html": "89e63d82d12a212e63529066f92954c0421a494caf9d9759155aafa7becc8165",
+    "outputs/simulation-results.json": "4becfea46f75bb5715343cfad9ee0de64f5438eb6823975c981c7facb930c8cf",
+    "outputs/verification-results.json": "ff90b08bb38fc8e789acfdad378a23c6592b34a7ba5a885be31d77cc1d13c734",
+    "outputs/rtp-claim-table.json": "58de71cb6dc34e2e758bcc5596813a459cad8657c5c3d7b8a4b584b92895588a"
+  },
+  "verdict": "PROVABLY FAIR — Full Pass",
+  "scored": {
+    "passed": 34,
+    "flags": 1,
+    "operatorFlags": 0,
+    "captureFlags": 1,
+    "hardFail": 0,
+    "of": 35
+  },
+  "capturedAt": {
+    "from": "2026-05-07T19:13:44.453Z",
+    "to": "2026-05-08T01:41:59.144Z"
+  },
+  "environment": {
+    "host": "duel.com",
+    "stage": "production",
+    "qualifier": null
+  },
+  "supersedes": "v1.0.0",
+  "signature": "SHA256:gEujiJm2pRyq7lQsfYQfQ1r97H/J7GdaKHbOW8GtikY",
+  "falsifiability": {
+    "registry": "tests/mutations.json",
+    "runner": "scripts/mutate.mjs",
+    "mutations": 52,
+    "killed": 52,
+    "scoredStepsCovered": "35/35",
+    "declaredSurvivors": 0,
+    "source": "npm run mutate 2026-10-14 evening, the whole registry (52 entries) in one run on the tree carrying the FIXPASS2 C3 entries (Apple M2 Max, 12 cores, node v22.23.1): \"52/52 mutations killed\", \"35/35 scored steps have a mutation that kills them\"; 2026-10-15 --only M32, MC3: 5/5 killed, MC3a/MC3b exit 5"
+  },
+  "pending": ""
+}

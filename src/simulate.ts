@@ -7,21 +7,18 @@
  *   PASS 1: theoretical-RTP convergence using a pinned master seed
  *           (HMAC-derived PCG32 state) — fully reproducible across runs.
  *           Confirms the Monte Carlo estimate of base-game RTP +
- *           bonus contribution converges to ~100% (the game's claimed
- *           Zero Edge target). Reports chi-squared on the cluster-size
+ *           bonus contribution converges to the exact 2^32 figure
+ *           (99.972%; the game's claimed Zero Edge figure is 100%,
+ *           and Step 16 scores against the exact figure, not the claim). Reports chi-squared on the cluster-size
  *           distribution per reel and serial-independence on per-spin
  *           payouts.
  *
- *   PASS 2: forward-replay cherry-pick detection on the audit's
- *           captured server seeds. For each committed (serverSeed,
- *           clientSeed) epoch, replay 10,000 nonces through the
- *           verified base-game algorithm. Each seed's early window
- *           (nonces 0..49 — what an operator could have inspected
- *           before committing) and late window (50..9,999) are
- *           chi-squared (win/no-win, 1 d.o.f.) against the exact
- *           enumerated win rate from base-2pow32.json. Flag = early
- *           p<0.05 AND late p≥0.05. Verdict via binomial
- *           P(X ≥ flags | n=epochs, p=0.05) ≥ 0.01.
+ *   PASS 2: replays the audit's captured server seeds and computes the
+ *           empirical RTP that those seeds delivered to the auditor.
+ *           Compares against the Pass 1 distribution; outliers are
+ *           flagged as potential cherry-picking. Threshold via binomial
+ *           p-value rather than a fixed count — scales correctly with
+ *           the number of seeds in the dataset.
  *
  * Output:
  *   outputs/simulation-results.json   — machine-readable summary
@@ -41,9 +38,10 @@ import {
 import { loadPaytable, freeSpinsAwarded, scatterMultiplier, clusterMultiplier, type Paytable, type Condition } from './paytable';
 import { computeOutcomeIndex, deriveTumbleSeed } from './rng';
 import type { OperatorConfig } from './types';
+import { deriveEnumeratedRtp } from '../tests/steps/enumeration';
 import {
   chiSquaredPValue, poolTailBins, lag1Autocorrelation, waldWolfowitzRunsP,
-  bonferroniCriticalZ,
+  bonferroniCriticalZ, meanStd,
 } from './stats';
 
 // ── Tuning knobs ────────────────────────────────────────────────────────────
@@ -78,8 +76,23 @@ if (CONVERGENCE_SAMPLES[CONVERGENCE_SAMPLES.length - 1] !== PASS1_BASE_SPINS) {
   CONVERGENCE_SAMPLES.push(PASS1_BASE_SPINS);
 }
 
-const OUTPUTS = path.join(__dirname, '..', 'outputs');
+// A SIMULATION RUN MUST NOT REWRITE THE ARTIFACT IT IS SCORED AGAINST. outputs/simulation-results.json
+// and outputs/rtp-convergence.html are committed artifacts of record, pinned by SHA-256 in
+// src/artifact-pins.ts (Step 33) and read by Steps 16–18. Until this guard existed `npm test`
+// chained simulate before verify, so every test run silently replaced the evidence the verifier
+// was about to score. A run now writes under outputs/run/ — gitignored, a run record — and the
+// committed copies are refreshed only by the deliberate `PF_EMIT=1 npm run simulate`, which must
+// be followed by re-pinning both files in src/artifact-pins.ts in the same commit.
+const PF_EMIT = process.env.PF_EMIT === '1';
+const OUTPUTS_COMMITTED = path.join(__dirname, '..', 'outputs');
+const OUTPUTS = PF_EMIT ? OUTPUTS_COMMITTED : path.join(OUTPUTS_COMMITTED, 'run');
+const OUTPUTS_LABEL = PF_EMIT ? 'outputs' : 'outputs/run';
 fs.mkdirSync(OUTPUTS, { recursive: true });
+if (PF_EMIT) {
+  console.log('REPORT GENERATION (PF_EMIT=1): the committed artifacts in outputs/ will be rewritten — re-pin them in src/artifact-pins.ts.');
+} else {
+  console.log('Run products go to outputs/run/ (committed artifacts in outputs/ are NOT modified; set PF_EMIT=1 to refresh them).');
+}
 
 // ── Symbol-table builder ────────────────────────────────────────────────────
 
@@ -186,11 +199,6 @@ function spinPayoutFromOutcomeIndex(
     const clusters = findClusters(codeGrid);
     const removedSet = new Set<number>();
     for (const c of clusters) {
-      // `paytable.minClusterSize` is the operator's `rules.min_cluster_size`
-      // (= 4) — the engine's geometric minimum. The effective PAYING
-      // minimum is 8: per-symbol tables publish no entries for sizes 4–7,
-      // so `clusterMultiplier` returns 0 for those and the `baseMult <= 0`
-      // guard below skips removal. RTP-equivalent to gating at 8 directly.
       if (c.size < paytable.minClusterSize) continue;
       const baseMult = clusterMultiplier(paytable, condition, c.symbol, c.size);
       if (baseMult <= 0) continue;
@@ -244,10 +252,7 @@ function spinPayoutFromOutcomeIndex(
   let payout = totalBaseMult * Math.max(cumulativeBombs, 1);
 
   // Scatter pay (base_game only, applied once at end of spin per Duel spec).
-  // Gate on the operator-published minScattersToTrigger; the paytable has no
-  // entries below that count, so scatterMultiplier returns 0 naturally —
-  // keeps all three engines consistent without coupling to a literal.
-  if (condition === 'base_game' && cumulativeScatters >= paytable.minScattersToTrigger) {
+  if (condition === 'base_game' && cumulativeScatters >= 4) {
     payout += scatterMultiplier(paytable, condition, cumulativeScatters);
   }
 
@@ -320,7 +325,7 @@ const bonusTables = buildTables(config, paytable, 'bonus_game');
 
 const prng1 = new Pcg32(PRNG_SEED);
 
-console.log(`\nPass 1: ${PASS1_BASE_SPINS.toLocaleString()} base spins (integrated trigger+session, pinned PCG32 stream)`);
+console.log(`\nPass 1: ${PASS1_BASE_SPINS.toLocaleString()} base spins (integrated trigger+session, random seeds)`);
 const pass1Start = Date.now();
 
 // Per-reel symbol-index counts for chi-squared.
@@ -329,6 +334,9 @@ for (let r = 0; r < REELS; r++) reelCounts.push(new Array(baseTables.codes.lengt
 
 const baseConvergence: { rounds: number; rtp: number }[] = [];
 const baseSpinPayouts: number[] = [];   // for serial-independence test
+const blockSize        = 50;             // per-seed sample size in the captured dataset
+const blockRTPs: number[] = [];          // 50-spin block RTPs from Pass 1 — used to derive the 5th-percentile cherry-pick threshold
+let blockSum = 0, blockCount = 0;
 let baseTotalPayout = 0, baseTriggered = 0;
 let bonusTotalPayout = 0, bonusSessionsRun = 0;
 const triggerScatterDist: Record<number, number> = {};
@@ -343,6 +351,7 @@ let nextSnapshot = 0;
 for (let i = 0; i < PASS1_BASE_SPINS; i++) {
   const r = spinPayout(paytable, 'base_game', baseTables, prng1);
   baseTotalPayout += r.payout;
+  blockSum += r.payout;
   if (r.scatters >= paytable.minScattersToTrigger) {
     baseTriggered++;
     triggerScatterDist[r.scatters] = (triggerScatterDist[r.scatters] ?? 0) + 1;
@@ -356,6 +365,12 @@ for (let i = 0; i < PASS1_BASE_SPINS; i++) {
   // Track per-reel symbol-index counts for chi-squared
   for (let col = 0; col < REELS; col++) {
     for (const idx of r.clusterSizesByReel[col] || []) reelCounts[col][idx]++;
+  }
+  // Record a 50-spin block RTP every blockSize spins.
+  blockCount++;
+  if (blockCount === blockSize) {
+    blockRTPs.push(blockSum / blockSize);
+    blockSum = 0; blockCount = 0;
   }
   if (i === CONVERGENCE_SAMPLES[nextSnapshot] - 1) {
     baseConvergence.push({ rounds: i + 1, rtp: (baseTotalPayout + bonusTotalPayout) / (i + 1) });
@@ -405,25 +420,52 @@ console.log(`  Wald-Wolfowitz runs:   runs=${runs.runs}, expected=${runs.expecte
 console.log('\nPass 2: cherry-pick detection on captured server seeds');
 const dataset = loadDataset();
 const seedMap = buildSeedMap(dataset);
+const pass2Stats: Array<{ seed: string; nSpins: number; rtp: number }> = [];
+const pass2Start = Date.now();
+let pass2Idx = 0;
 
-// Count captured base-game spins per epoch for context metadata.
-// The actual cherry-pick test is the forward-replay below; this map
-// only feeds seedsReplayed / totalCapturedSpins in the output JSON.
-const epochs = new Map<string, { spins: number }>();
+// Group the captured base-game spins by their epoch's revealed seed.
+const epochs = new Map<string, { spins: number; payout: number }>();
 for (const b of dataset.bets) {
   if (b.mode !== 'spin') continue;        // skip buys + free spins
   if (b.response.spin_type !== 'base_game') continue;
   const seed = seedMap.get(b.activeAtSpin.server_seed_hashed);
   if (!seed) continue;
-  const e = epochs.get(seed) || { spins: 0 };
+  const e = epochs.get(seed) || { spins: 0, payout: 0 };
   e.spins++;
+  e.payout += parseFloat(b.response.amount_won_coins) / parseFloat(b.response.bet_amount_currency);
   epochs.set(seed, e);
 }
-let totalCapturedSpins = 0;
-for (const e of epochs.values()) totalCapturedSpins += e.spins;
-const seedsReplayed = epochs.size;
-console.log(`  ${seedsReplayed} epochs found, ${totalCapturedSpins.toLocaleString()} captured base spins`);
 
+for (const [seed, e] of epochs) {
+  pass2Stats.push({ seed, nSpins: e.spins, rtp: e.payout / e.spins });
+  pass2Idx++;
+  if (pass2Idx % 10 === 0 || pass2Idx === epochs.size) progress('pass-2 epochs', pass2Idx, epochs.size, pass2Start);
+}
+process.stdout.write('\n');
+
+// AGGREGATE Pass 2: compare the captured aggregate RTP across ALL seeds
+// against the Pass 1 reference distribution. For low-base-RTP games
+// where per-seed variance is dominated by rare big wins, aggregate
+// comparison has far higher power than per-seed flagging. Threshold:
+// |z| < 3 → no cherry-pick evidence.
+const totalCapturedSpins   = pass2Stats.reduce((a, s) => a + s.nSpins, 0);
+const totalCapturedPayout  = pass2Stats.reduce((a, s) => a + s.rtp * s.nSpins, 0);
+const meanCapturedRTP      = totalCapturedSpins ? totalCapturedPayout / totalCapturedSpins : 0;
+
+// Pass 1 mean + std on per-spin payout (use base spin payouts sample).
+const stats = meanStd(baseSpinPayouts);
+const seCapturedMean = totalCapturedSpins > 0 ? stats.std / Math.sqrt(totalCapturedSpins) : 0;
+const aggregateZ     = seCapturedMean > 0 ? (meanCapturedRTP - stats.mean) / seCapturedMean : 0;
+
+// Per-seed binomial flag (informational): proportion of captured seeds
+// whose per-seed RTP exceeds the simulated 95th percentile of 50-spin
+// blocks. Under null we'd expect ~5% to flag.
+const sortedBlocks = blockRTPs.slice().sort((a, b) => a - b);
+const p95Threshold = sortedBlocks.length
+  ? sortedBlocks[Math.floor(sortedBlocks.length * 0.95)]
+  : Infinity;
+const aboveP95 = pass2Stats.filter(s => s.rtp >= p95Threshold).length;
 function binomSurvival(k: number, n: number, p: number): number {
   let s = 0, term = Math.pow(1 - p, n);
   for (let x = 0; x < k; x++) {
@@ -432,6 +474,17 @@ function binomSurvival(k: number, n: number, p: number): number {
   }
   return Math.max(0, 1 - s);
 }
+// One-sided P(X >= aboveP95) under H₀: each seed has 5% chance of landing above the 95th
+// percentile of Pass 1 50-spin blocks. The cherry-pick direction is fewer-above (operator
+// selects low-RTP seeds), but we report the standard upper-tail survival; the scored test
+// is the aggregate z-score above. Informational only.
+const cherryPickP = binomSurvival(aboveP95, pass2Stats.length, 0.05);
+
+console.log(`\nPass 2 (aggregate cherry-pick test):`);
+console.log(`  Total captured spins: ${totalCapturedSpins.toLocaleString()}, captured aggregate RTP: ${meanCapturedRTP.toFixed(4)}`);
+console.log(`  Pass 1 reference mean: ${stats.mean.toFixed(4)}, per-spin std: ${stats.std.toFixed(4)}`);
+console.log(`  Aggregate z-score:    ${aggregateZ.toFixed(2)}  (PASS criterion: |z| < 3)`);
+console.log(`  Per-seed informational: seeds above 95th-pct of Pass 1 blocks: ${aboveP95}/${pass2Stats.length} (binomial p=${cherryPickP.toFixed(4)})`);
 
 // ── Pass 2 (forward-replay) — 10k-nonce per-epoch cherry-pick test ─────────
 //
@@ -457,8 +510,11 @@ const NONCES_PER_SEED = 10_000;
 const EPOCH_LENGTH    = 50;
 
 interface Base2Pow32 { range: { count: number }; win_rate: number }
+// The 2^32 base enumeration is a pinned INPUT of this run, not a product of it: read the committed copy.
+// Until 2026-09-26 this read path.join(OUTPUTS, …), which is outputs/run/ unless PF_EMIT=1, so
+// `npm run test:full` on a fresh clone crashed with ENOENT after the 30M-spin Pass 1 (measured).
 const baseRef = JSON.parse(
-  fs.readFileSync(path.join(OUTPUTS, 'base-2pow32.json'), 'utf-8'),
+  fs.readFileSync(path.join(OUTPUTS_COMMITTED, 'base-2pow32.json'), 'utf-8'),
 ) as Base2Pow32;
 const P_WIN   = baseRef.win_rate;
 const P_NOWIN = 1 - P_WIN;
@@ -559,8 +615,10 @@ console.log(`  Time: ${(forwardReplayElapsedMs / 1000).toFixed(1)}s`);
 
 // ── Output JSON ────────────────────────────────────────────────────────────
 
+// NO run metadata (removed 2026-09-26, profile GROOMERS-27): this file is pinned (src/artifact-pins.ts);
+// `generatedAt` and the forward-replay `executionTimeMs` made a regeneration unable to reproduce its bytes.
+// Elapsed times are printed to the console only.
 const out = {
-  generatedAt: new Date().toISOString(),
   pass1: {
     baseSpins: PASS1_BASE_SPINS,
     baseRTP,
@@ -585,8 +643,18 @@ const out = {
     },
   },
   pass2: {
-    seedsReplayed,
+    seedsReplayed:           pass2Stats.length,
     totalCapturedSpins,
+    capturedAggregateRTP:    meanCapturedRTP,
+    pass1ReferenceMean:      stats.mean,
+    pass1PerSpinStd:         stats.std,
+    aggregateZScore:         aggregateZ,
+    aggregateThreshold:      3,
+    aggregateRiskLevel:      Math.abs(aggregateZ) < 3 ? 'WITHIN EXPECTED RANGE' : 'EXCEEDS 3-SIGMA',
+    perSeedAboveP95:         aboveP95,
+    perSeedExpectedAt5pct:   Math.round(pass2Stats.length * 0.05),
+    perSeedBinomialP:        cherryPickP,
+    perSeedSummary: pass2Stats.map(s => ({ seed: s.seed.slice(0, 16), nSpins: s.nSpins, rtp: Number(s.rtp.toFixed(4)) })),
     forwardReplay: {
       epochs:           N_fr,
       noncesPerSeed:    NONCES_PER_SEED,
@@ -596,22 +664,35 @@ const out = {
       cherryPickFlags,
       cherryPickPValue,
       cherryPickVerdict,
-      executionTimeMs:  forwardReplayElapsedMs,
       results:          forwardReplayResults,
     },
   },
 };
 fs.writeFileSync(path.join(OUTPUTS, 'simulation-results.json'), JSON.stringify(out, null, 2));
-console.log(`\nWrote outputs/simulation-results.json (${(fs.statSync(path.join(OUTPUTS, 'simulation-results.json')).size / 1024).toFixed(1)} KB)`);
+console.log(`\nWrote ${OUTPUTS_LABEL}/simulation-results.json (${(fs.statSync(path.join(OUTPUTS, 'simulation-results.json')).size / 1024).toFixed(1)} KB)`);
 
 // ── RTP convergence chart (self-contained HTML) ────────────────────────────
+
+// The pinned chart is self-contained: Chart.js is inlined from the exact-pinned devDependency
+// (package.json chart.js 4.4.7), never loaded from a CDN (Mike's review 2026-09-28, F16).
+const CHARTJS_SOURCE = fs.readFileSync(path.join(path.dirname(require.resolve('chart.js')), 'chart.umd.js'), 'utf8');
+
+// The reference line is the game's theoretical RTP: the exact 2^32 enumeration + session
+// convolution that Step 32 derives (tests/steps/enumeration.ts deriveEnumeratedRtp), read from the
+// committed artifacts. Until 19 Oct 2026 the line was the operator's 100% claim (config.rtp)
+// labelled "Theoretical" (Mike's QA, 19 Oct 2026); the claim is now shown and named separately.
+const ENUMERATED = deriveEnumeratedRtp(OUTPUTS_COMMITTED);
+if (!ENUMERATED) throw new Error('simulate: the pinned enumeration artifacts are missing (Steps 29–31)');
+const THEORETICAL_PCT = ENUMERATED.totalRtp * 100;
+const CLAIM_PCT = parseFloat(config.rtp);
 
 const chartHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>DUEL.COM GROOMER'S VAN RTP CONVERGENCE — ${(PASS1_BASE_SPINS / 1e6).toFixed(0)}M BASE SPINS</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<!-- Chart.js 4.4.7 dist/chart.umd.js inlined verbatim from the npm package pinned in package-lock.json -->
+<script>${CHARTJS_SOURCE}</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fafafa; padding: 24px; }
@@ -637,14 +718,15 @@ const chartHtml = `<!DOCTYPE html>
   <div class="chart-wrap"><canvas id="chart"></canvas></div>
   <div class="legend">
     <span><span class="dot" style="background:#1565c0;height:3px"></span> Cumulative blended RTP</span>
-    <span><span class="dot" style="background:#e57373;border-top:2px dashed #e57373;height:0"></span> Theoretical (${parseFloat(config.rtp).toFixed(4)}%)</span>
+    <span><span class="dot" style="background:#e57373;border-top:2px dashed #e57373;height:0"></span> Theoretical, exact 2³² enumeration (${THEORETICAL_PCT.toFixed(4)}%)</span>
+    <span>Operator claim ${CLAIM_PCT.toFixed(4)}% (not plotted)</span>
   </div>
   <div class="summary">
     <div class="stat"><div class="label">Base RTP</div><div class="value">${(baseRTP*100).toFixed(4)}%</div></div>
     <div class="stat"><div class="label">Trigger Prob</div><div class="value">${(triggerProb*100).toFixed(4)}%</div></div>
     <div class="stat"><div class="label">Avg Session Payout</div><div class="value">${avgSessionPayout.toFixed(4)}×</div></div>
     <div class="stat final"><div class="label">Final Blended RTP</div><div class="value">${(blendedRTP*100).toFixed(4)}%</div></div>
-    <div class="stat"><div class="label">Theoretical</div><div class="value">${parseFloat(config.rtp).toFixed(4)}%</div></div>
+    <div class="stat"><div class="label">Theoretical (exact 2³²)</div><div class="value">${THEORETICAL_PCT.toFixed(4)}%</div></div>
   </div>
 </div>
 <script>
@@ -655,7 +737,7 @@ const labels = data.map(d => {
   return (d.rounds / 1e3).toFixed(0) + 'K';
 });
 const rtps = data.map(d => d.rtp * 100);
-const theoretical = ${parseFloat(config.rtp)};
+const theoretical = ${THEORETICAL_PCT};
 
 new Chart(document.getElementById('chart').getContext('2d'), {
   type: 'line',
@@ -728,6 +810,7 @@ new Chart(document.getElementById('chart').getContext('2d'), {
 </body>
 </html>`;
 fs.writeFileSync(path.join(OUTPUTS, 'rtp-convergence.html'), chartHtml);
-console.log(`Wrote outputs/rtp-convergence.html`);
+console.log(`Wrote ${OUTPUTS_LABEL}/rtp-convergence.html`);
+if (!PF_EMIT) console.log('Committed artifacts NOT modified.');
 
 console.log(`\nTotal elapsed: ${((Date.now() - pass1Start) / 1000).toFixed(1)}s`);

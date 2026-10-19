@@ -1,0 +1,40 @@
+{
+  "package": "duel/groomers-van",
+  "game": "groomers-van",
+  "settingSpace": "one setting: a paid spin (the bonus buy is not derivable — canned spin grid, DL-3 — and is not in the table)",
+  "rtpMethod": "base RTP (exhaustive 2^32) + P(trigger) × E[session | trigger] (exact lane convolution), in double precision; the rule is exact on that double",
+  "rule": "RTP-CLAIM",
+  "ruleVersion": "1.2.0 (Methodology v1.1: places, per-setting, stake tiers, noted, published, RTP Figure Overstated; agreed 2026-10-14; 1.1.0 2026-10-01; 1.0.0 2026-09-29)",
+  "bandPp": "0.10",
+  "claim": {
+    "kind": "flat",
+    "rtp": "1",
+    "source": "game settings: \"rtp\": \"100.0000\" in Duel's Groomer's Van game config v1.4 (data/raw/groomers-van-config-v1.4.json:9; declaration gameModel.edge.claimed 0)"
+  },
+  "settings": 1,
+  "trueMin": {
+    "setting": "paid spin (base game + triggered bonus)",
+    "rtpExact": "1125584657215581/1125899906842624",
+    "rtpPct": "99.972000"
+  },
+  "trueMax": {
+    "setting": "paid spin (base game + triggered bonus)",
+    "rtpExact": "1125584657215581/1125899906842624",
+    "rtpPct": "99.972000"
+  },
+  "houseSideFailures": 0,
+  "playerFavourable": 0,
+  "worst": {
+    "setting": "paid spin (base game + triggered bonus)",
+    "gapPp": "-0.028000"
+  },
+  "rangeChecks": [],
+  "outcome": "PASS",
+  "minimalFix": "none — the claim holds for every setting it states a figure for",
+  "unstated": 0,
+  "rowsComplete": true,
+  "buckets": [],
+  "rows": [
+    {"setting":"paid spin (base game + triggered bonus)","rtpExact":"1125584657215581/1125899906842624","rtpPct":"99.972000","gapPp":"-0.028000","side":"within-band","outcome":"PASS"}
+  ]
+}

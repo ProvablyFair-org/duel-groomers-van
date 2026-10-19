@@ -1,5 +1,4 @@
 {
-  "generatedAt": "2026-09-14T19:52:27.258Z",
   "totalBets": 6225,
   "totalSeeds": 117,
   "revealedSeeds": 116,
@@ -8,206 +7,1550 @@
       "step": 1,
       "name": "Seed Hash Integrity",
       "status": "PASS",
-      "detail": "116/116 revealed seeds: SHA-256(hex_decode(server_seed)) matches the committed hash. 0 failures."
+      "detail": "All 116 commitments required by src/loader.ts opened and verified against the seed records' serverSeed fields (attached at export by the capture's save step from the post-rotation /verify responses: MANIFEST, Dataset and capture) — SHA-256(hex_decode(server_seed)) matches the committed hash — and all 116 epochs a captured bet was served under resolve to a revealed plaintext. The 117th record is the seed still active when the capture closed; no captured bet used it.",
+      "data": {
+        "seedRecords": 117,
+        "commitmentsOpened": 116,
+        "epochs": 116,
+        "epochsWithoutRevealedSeed": 0,
+        "populationIssues": [],
+        "failures": []
+      },
+      "profileIds": [
+        "GROOMERS-01"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-01",
+          "coverage": "full",
+          "note": "SHA-256(hex_decode(server_seed)) against the committed hash on all 116 revealed seeds, bound to EXPECTED_REVEALED_SEEDS; every epoch a captured bet was served under must resolve to a revealed plaintext (the 117th record is the seed still active when the capture closed, with no bet)"
+        }
+      ]
     },
     {
       "step": 2,
       "name": "Commitment Linkage",
       "status": "PASS",
-      "detail": "116/116 consecutive seed links verified. 0 broken."
+      "detail": "All 116 consecutive seed links required by src/loader.ts verified: each rotation's active hash equals the next hash recorded at the previous rotation, so the records agree on epoch ORDER and not merely epoch membership. Link equality is a consistency check, not a timing proof: that each next hash was shown before its epoch's bets rests on the capture's recorded order (rotation records in time order, every bet placed after the record that committed its hash: Step 3), conditional on capture integrity, which the package assumes (MANIFEST premise P1). The capture carries no pre-capture link, so the chain is established from the first captured epoch onward, not into it.",
+      "data": {
+        "linksExamined": 116,
+        "linksVerified": 116,
+        "linksBroken": 0,
+        "preCaptureLinkPresent": false,
+        "preCaptureNote": "The dataset records no commitment outstanding before the first rotation, so for the first captured epoch there is no recorded observation of its hash as \"next\" before its rotation. For every later epoch the capture recorded it as \"next\" at the previous rotation; that timing rests on the capture record (MANIFEST premise P1), not on the hash equality.",
+        "populationIssues": [],
+        "failures": []
+      },
+      "profileIds": [
+        "GROOMERS-02"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-02",
+          "coverage": "partial",
+          "note": "all 116 consecutive links (each rotation's active hash = the hash the previous rotation published as next), bound to EXPECTED_SEED_LINKS. PARTIAL: the capture carries no pre-capture link, so the chain is anchored from the first captured epoch onward, not into it (capture-origin; the step says so)"
+        }
+      ]
     },
     {
       "step": 3,
       "name": "Hash Consistency Within Epoch",
       "status": "PASS",
-      "detail": "116/116 epochs internally consistent. 0 inconsistent."
+      "detail": "Epochs assigned from the rotation timeline, not from the bets' own hash field: all 6225 bets carry the server-seed hash committed by the rotation record active when they were placed, across 116 epochs (src/loader.ts: 116). Every bet also carries the client seed that rotation set (0 mismatches). 1 rotation record(s) with no bet: rotate-phase-final.",
+      "data": {
+        "betsChecked": 6225,
+        "betsMismatched": 0,
+        "clientSeedMismatched": 0,
+        "epochsWithBets": 116,
+        "epochsInconsistent": 0,
+        "orphanBets": 0,
+        "rotationRecordsOutOfOrder": 0,
+        "rotationRecordsWithoutBets": [
+          "rotate-phase-final"
+        ],
+        "populationIssues": []
+      },
+      "profileIds": [
+        "GROOMERS-03"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-03",
+          "coverage": "full",
+          "note": "epochs from the rotation timeline: all 6,225 entries carry the hash of the rotation active when placed, 116 epochs bound to EXPECTED_EPOCHS; since 2026-09-26 also the client seed that rotation set (the snapshot and, where the /verify payload publishes one, that too) — and Step 4 fails an epoch with more than one client seed. FAIL probed (one bet given a forged client seed)"
+        }
+      ]
     },
     {
       "step": 4,
       "name": "Nonce Audit",
-      "status": "PASS",
-      "detail": "112/116 epochs have a clean 0..N-1 nonce sequence. 4 epochs contain capture-retry gaps (4 nonce gaps observed; for each, the seed is revealed and the missing nonce is unused, but the missing completed rounds are not themselves reconstructed/verified). 0 epochs have unverifiable gaps. Examples: epoch d6bebb438befe8fb: nonce 48 unused; seed revealed (missing round itself not reconstructed/verified) | epoch 22f48a0f53065c9c: nonce 3 unused; seed revealed (missing round itself not reconstructed/verified) | epoch 77544e55cb2fdf56: nonce 23 unused; seed revealed (missing round itself not reconstructed/verified)"
+      "status": "FLAG",
+      "detail": "112/116 epochs have a clean 0..N-1 nonce run with no reuse; 4 contain capture-retry gaps; 0 are defective. 4 unused nonce(s) in total (src/loader.ts declares 4); 4/4 recomputed to an outcome_index from the revealed seed (values in this step's data block — the capture has no bet at those nonces to match them against, so those rounds are NOT verified; capture-origin FLAG: disclosed, verdict-neutral). 5750 regular bets examined (src/loader.ts: 5750).",
+      "data": {
+        "epochs": 116,
+        "cleanEpochs": 112,
+        "retryGapEpochs": 4,
+        "defectiveEpochs": 0,
+        "regularBetsExamined": 5750,
+        "gaps": [
+          {
+            "epoch": "d6bebb438befe8fb",
+            "nonce": 47,
+            "outcomeIndex": 2213331201
+          },
+          {
+            "epoch": "22f48a0f53065c9c",
+            "nonce": 2,
+            "outcomeIndex": 4089378259
+          },
+          {
+            "epoch": "77544e55cb2fdf56",
+            "nonce": 22,
+            "outcomeIndex": 1679779331
+          },
+          {
+            "epoch": "3052a819eb484351",
+            "nonce": 9,
+            "outcomeIndex": 1737852047
+          }
+        ],
+        "populationIssues": [],
+        "problems": []
+      },
+      "origin": "capture",
+      "profileIds": [
+        "GROOMERS-04"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-04",
+          "coverage": "full",
+          "note": "per epoch, on the SERVED nonce (recorded, or the correction declared by spin id — see Step 5): nonces from 0, no reuse, no null, at most 50 regular bets (the capture's rotation schedule), one client seed; since 2026-09-26 every gap must be declared BY IDENTITY in src/loader.ts EXPECTED_NONCE_GAPS (epoch hash, nonce) and every declared gap must be present — a moved gap fails. The 4 gaps are a capture-origin FLAG (decision-13). CORRECTED 2026-09-26: three of the four were declared at nonces 48 / 23 / 10, which are the nonces three captured bets were actually served at; the lost rounds are at 47 / 22 / 9, and the outcome_index this step printed for the old three was a captured bet's. CORRECTED 2026-10-04: the fourth (epoch 22f48a0f…) was declared at nonce 3, the nonce spin 1974625 was served at; the lost round is at 2. Lost rounds now at 47 / 2 / 22 / 9. FAIL probed (a declared gap moved from nonce 2 to 3)"
+        }
+      ]
     },
     {
       "step": 5,
       "name": "Outcome Recomputation",
       "status": "PASS",
-      "detail": "6205/6205 bets reproduce 30/30 cells from (server_seed, client_seed, nonce, round_index). 6202 matched at recorded nonce; 3 matched at recorded ±1 — disclosed capture-retry artefacts. 0 unverifiable. Skipped: 0 (seed not revealed), 0 (pf_skipped=true, operator-disclosed cosmetic), 20 (buy spins — server-canned to guarantee scatters, not in published RNG)."
+      "detail": "6205/6205 bets reproduce 30/30 cells from (server_seed, client_seed, nonce, round_index) (src/loader.ts: 6205 non-buy entries). 5726 base spins matched at their recorded nonce; 4 at the served nonce declared by spin id in src/loader.ts CAPTURE_NONCE_CORRECTIONS (recorded + 1: a retried request consumed the recorded nonce; each proven to reproduce at the served nonce and not at the recorded one); 475 free spins at their verify record's nonce and round_index. Payload inputs: 148/148 base-spin verify payloads carry the served nonce; 475/475 free spins carry the trigger's served nonce and round_index = current_spin (triggered bonus) or current_spin − 1 (bought bonus). 0 unverifiable. Skipped: 0 (seed not revealed / no grid), 0 (pf_skipped=true, operator-disclosed cosmetic), 20 (buy spins — server-canned to guarantee scatters, not in published RNG). Draw bias (GROOMERS-08), measured from src/rng.ts acceptedDraw on all 13 distinct weight totals the draws use: every accepted window is a whole number of totals, worst bias 0 (ceiling 2^-32). Duel's own Verify-tab code (GROOMERS-09, pinned, pulled from duel.com/fairness/verify 2026-05-19) executed unmodified on 6205/6205 entries: outcome index 6205 and 30-cell initial grid 6205 agree; 14/14 src/rng.ts citations carry their operator line; given the published multiplier weights as a 200-entry list (each value repeated by its weight, config order, pinned), its multiplier step gives 335/335 served initial-grid multiplier values. Initial-grid bonus multiplier values recomputed by src/rng.ts with the config's weights: 335/335 equal the served ones. Player-verifier parity (GROOMERS-24): the ProvablyFair.org docs-site derive.js + paytables.js (pinned, origin/main @ bd4d59c) executed on 5730/5730 base spins at the matched nonce: outcome_index 5730, trigger flag 5730, base-spin stake multiple 5730 agree (relative bound 1e-12; free-spin sessions and buys not compared).",
+      "data": {
+        "checked": 6205,
+        "matchedBaseAtRecordedNonce": 5726,
+        "matchedAtDeclaredCorrection": 4,
+        "matchedFreeSpinsAtPayload": 475,
+        "mismatched": 0,
+        "payloadInputs": {
+          "basePayloadChecked": 148,
+          "basePayloadOk": 148,
+          "freeRuleChecked": 475,
+          "freeRuleOk": 475
+        },
+        "skippedNoSeed": 0,
+        "skippedPfSkipped": 0,
+        "skippedBuy": 20,
+        "populationIssues": [],
+        "drawBias": {
+          "ceiling": 2.3283064365386963e-10,
+          "rows": [
+            {
+              "total": 200,
+              "acceptedWindow": 4294967200,
+              "remainder": 0,
+              "perResidue": 21474836,
+              "bias": 0,
+              "predicateProbeFailures": 0,
+              "exact": true
+            },
+            {
+              "total": 421,
+              "acceptedWindow": 4294967062,
+              "remainder": 0,
+              "perResidue": 10201822,
+              "bias": 0,
+              "predicateProbeFailures": 0,
+              "exact": true
+            },
+            {
+              "total": 508,
+              "acceptedWindow": 4294967280,
+              "remainder": 0,
+              "perResidue": 8454660,
+              "bias": 0,
+              "predicateProbeFailures": 0,
+              "exact": true
+            },
+            {
+              "total": 530,
+              "acceptedWindow": 4294966830,
+              "remainder": 0,
+              "perResidue": 8103711,
+              "bias": 0,
+              "predicateProbeFailures": 0,
+              "exact": true
+            },
+            {
+              "total": 581,
+              "acceptedWindow": 4294966970,
+              "remainder": 0,
+              "perResidue": 7392370,
+              "bias": 0,
+              "predicateProbeFailures": 0,
+              "exact": true
+            },
+            {
+              "total": 592,
+              "acceptedWindow": 4294967104,
+              "remainder": 0,
+              "perResidue": 7255012,
+              "bias": 0,
+              "predicateProbeFailures": 0,
+              "exact": true
+            },
+            {
+              "total": 605,
+              "acceptedWindow": 4294966995,
+              "remainder": 0,
+              "perResidue": 7099119,
+              "bias": 0,
+              "predicateProbeFailures": 0,
+              "exact": true
+            },
+            {
+              "total": 608,
+              "acceptedWindow": 4294966720,
+              "remainder": 0,
+              "perResidue": 7064090,
+              "bias": 0,
+              "predicateProbeFailures": 0,
+              "exact": true
+            },
+            {
+              "total": 2708,
+              "acceptedWindow": 4294966532,
+              "remainder": 0,
+              "perResidue": 1586029,
+              "bias": 0,
+              "predicateProbeFailures": 0,
+              "exact": true
+            },
+            {
+              "total": 4631,
+              "acceptedWindow": 4294965378,
+              "remainder": 0,
+              "perResidue": 927438,
+              "bias": 0,
+              "predicateProbeFailures": 0,
+              "exact": true
+            },
+            {
+              "total": 5935,
+              "acceptedWindow": 4294963645,
+              "remainder": 0,
+              "perResidue": 723667,
+              "bias": 0,
+              "predicateProbeFailures": 0,
+              "exact": true
+            },
+            {
+              "total": 24177,
+              "acceptedWindow": 4294947342,
+              "remainder": 0,
+              "perResidue": 177646,
+              "bias": 0,
+              "predicateProbeFailures": 0,
+              "exact": true
+            },
+            {
+              "total": 545003,
+              "acceptedWindow": 4294623640,
+              "remainder": 0,
+              "perResidue": 7880,
+              "bias": 0,
+              "predicateProbeFailures": 0,
+              "exact": true
+            }
+          ],
+          "worstBias": 0,
+          "inexact": []
+        },
+        "operatorVerifier": {
+          "files": [
+            {
+              "file": "evidence/verify-tab/duel-verify-tab-groomers-van-2026-05-19.captured.json",
+              "pinned": "20fefa7d2ad374b50d9ad83b98f79edff4fc5b34e2bb88706dfde022d31539d2",
+              "actual": "20fefa7d2ad374b50d9ad83b98f79edff4fc5b34e2bb88706dfde022d31539d2",
+              "match": true
+            },
+            {
+              "file": "verifier-parity/operator/run-operator-verifier.cjs",
+              "pinned": "6f9e748c1acfd73a3e14db14369ea9e54e6a8c5c61b8c117cd5b323a80be6c4a",
+              "actual": "6f9e748c1acfd73a3e14db14369ea9e54e6a8c5c61b8c117cd5b323a80be6c4a",
+              "match": true
+            }
+          ],
+          "ran": 6205,
+          "outcomeIndexAgree": 6205,
+          "gridAgree": 6205,
+          "citations": 14,
+          "citationsBad": [],
+          "multiplierList": {
+            "entries": 200,
+            "sha256": "f07398af4e1934e470a8422e83b8df4dedee3b04f5c9db71cffb1c85e1d6eac1",
+            "pinned": "f07398af4e1934e470a8422e83b8df4dedee3b04f5c9db71cffb1c85e1d6eac1"
+          },
+          "multipliersChecked": 335,
+          "multipliersAgree": 335,
+          "logs": [
+            "Please provide valid serverSeed, clientSeed, and nonce (>=0) before running."
+          ]
+        },
+        "initialGridMultipliers": {
+          "checked": 335,
+          "agree": 335
+        },
+        "siteVerifier": {
+          "provenance": {
+            "siteRoot": "qa-workspace/duel/docusaurus/src/components/VerifyBets",
+            "repository": "mikepforg/pf-audit-duel",
+            "ref": "origin/main",
+            "head": "bd4d59cd9a3e75146f2575c5218a3fb9a8b2692d",
+            "headDate": "2026-09-19",
+            "deriveLastChanged": "4aaa1b267a6b86199c46f57db41058c7885067bb (2026-06-07)",
+            "readVia": "git cat-file -p origin/main:<path>",
+            "readOn": "2026-09-26"
+          },
+          "files": [
+            {
+              "file": "games/groomers-van/derive.js",
+              "pinned": "095e552b08add4efb56181c2261ef586d037eee22508e2eea32373b1497ce632",
+              "actual": "095e552b08add4efb56181c2261ef586d037eee22508e2eea32373b1497ce632",
+              "match": true
+            },
+            {
+              "file": "games/groomers-van/paytables.js",
+              "pinned": "57fd0e4ac6abd986a06a7bd977e864214d48991e588d4c075e71796c50271469",
+              "actual": "57fd0e4ac6abd986a06a7bd977e864214d48991e588d4c075e71796c50271469",
+              "match": true
+            },
+            {
+              "file": "lib/hmac-sha256.js",
+              "pinned": "bc30bfe9ef202905ece93de33440d41851abf16e910f90c2a567774a2b79d889",
+              "actual": "bc30bfe9ef202905ece93de33440d41851abf16e910f90c2a567774a2b79d889",
+              "match": true
+            }
+          ],
+          "compared": 5730,
+          "outcomeIndexAgree": 5730,
+          "triggerAgree": 5730,
+          "stakeMultipleAgree": 5730,
+          "relTol": 1e-12,
+          "worstRelativeDeviation": 2.1147105230955362e-16
+        }
+      },
+      "profileIds": [
+        "GROOMERS-07",
+        "GROOMERS-08",
+        "GROOMERS-24"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-07",
+          "coverage": "full",
+          "note": "all 6,205 non-buy entries recompute the full 30-cell initial grid (and the published outcome_index where present) at ONE nonce, bound to EXPECTED_NON_BUY_BETS; the 20 bonus buys are skipped by declaration (R-BUY-FIRSTSPIN). Since 2026-09-26 there is no ±1 search: 5,726 base spins reproduce at their recorded nonce, 4 (spin ids 1965523, 1974625, 1976463, 1987633) at recorded + 1, declared by id in src/loader.ts CAPTURE_NONCE_CORRECTIONS — the capture's pre-bet snapshot recorded a nonce a retried request had consumed; each is proven to reproduce at the served nonce AND NOT at the recorded one, else FAIL — and 475 free spins at their verify record's nonce and round_index. Since 2026-10-04 (when 1974625 was added as the fourth correction) every base spin's verify-payload nonce must equal its served nonce (148/148), and every free spin's payload must carry the trigger's served nonce and round_index = current_spin in a triggered bonus, current_spin − 1 in a bought one (475/475). FAIL probed (one correction removed; the 1974625 correction removed; one free spin's current_spin moved by one)"
+        },
+        {
+          "id": "GROOMERS-08",
+          "coverage": "full",
+          "note": "added 2026-09-26 (R1): measured from src/rng.ts acceptedDraw — the one acceptance rule pickWeighted (grid) and generateMultipliers (bonus values) call since this change — on every distinct weight total the draws use (6 base reels, 6 bonus reels, the multiplier-value weights; binary search for the window + ~600 probes per total): every window is a whole number of totals, worst bias 0; HARD FAIL otherwise. The HMAC → outcome-index layer is covered by the exhaustive 2^32 enumeration (Steps 29–32). FAIL probed (acceptance window widened to all of 2^32 − 1)"
+        },
+        {
+          "id": "GROOMERS-24",
+          "coverage": "full",
+          "note": "added 2026-09-26: the ProvablyFair.org docs-site VerifyBets games/groomers-van/derive.js + paytables.js + lib/hmac-sha256.js, read with `git cat-file -p origin/main:<path>` from mikepforg/pf-audit-duel origin/main @ bd4d59c (derive.js / paytables.js last changed 4aaa1b2, 2026-06-07), vendored under verifier-parity/ and pinned in src/site-verifier.ts (095e552b…, 57fd0e4a…, bc30bfe9…). Step 5 FAILs unless all three hash to the pins, then EXECUTES the site's deriveGroomersVan on all 5,730 base spins at the nonce whose grid matched and requires the outcome_index of src/rng.ts, the served feature_triggered flag and the served total_multiplier (base spin incl. cascades) within 1e-12 relative. Scope: the site's free-spin session simulator and the 20 buys are NOT compared. FAIL probed (paytables.js cell changed and re-pinned; a derive.js byte changed without re-pin)"
+        }
+      ]
     },
     {
       "step": 6,
       "name": "Client Seed Influence",
       "status": "PASS",
-      "detail": "100/100 sampled bets produce a different outcome_index when the client seed is tampered. PASS criterion: ≥ 95/100 (≥ 95%)."
+      "detail": "623/623 bets produce a different outcome_index when the client seed is tampered (src/loader.ts: 623 eligible — every entry with a published outcome_index). PASS criterion: every eligible bet — the client seed must be an input on all of them.",
+      "data": {
+        "eligible": 623,
+        "differ": 623,
+        "unchanged": 0,
+        "populationIssues": []
+      },
+      "profileIds": [
+        "GROOMERS-06"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-06",
+          "coverage": "partial",
+          "note": "client-seed half: a tampered client seed changes the outcome_index on every one of the 623 entries whose /verify payload publishes one (bound to EXPECTED_VERIFY_PAYLOAD_BETS). PARTIAL: the tamper runs on 623 of 6,205 recomputable entries; no empty-seed control; the A–C and E client seeds come from Math.random() in the capture script (capture/capture.reference.js:260) — not a CSPRNG, RULE-NEWER-THAN-CAPTURE — and the Phase D seeds are the fixed strings pfaudit_groomers_seed00…09 (capture/capture.reference.js:263); both disclosed MANIFEST DL-2, exposed epochs not enumerated by a step"
+        }
+      ]
     },
     {
       "step": 7,
       "name": "Payout Math",
       "status": "PASS",
-      "detail": "6205/6205 non-buy bets reconcile sum(payline payouts × max(bomb_multiplier, 1)) = amount_won_coins (±max(0.000001, 0.05%)). 0 mismatched."
+      "detail": "6205/6205 non-buy bets reconcile sum(payline payouts × max(bomb_multiplier, 1)) = amount_won (USD, the unit the paylines are stated in) EXACTLY in integer cents, with no exception. 0 mismatched. 6225/6225 bets: amount_won_coins = round_half_up(amount_won × coins/USD rate, 2 dp) exactly — rate = bet_amount / bet_amount_currency for spins and buys, the trigger's rate for free spins; 2619 of them carry a win converted at a rate other than 1; 0 land on an exact half cent. 6225/6225 bets: all four credit fields are legal 2-dp amounts and amount_won = total_win_currency (USD), amount_won_coins = total_win (coins) exactly (0 off-grid, 0 unequal).",
+      "data": {
+        "reconciled": 6205,
+        "reconciledOk": 6205,
+        "mismatched": 0,
+        "coinsConversion": {
+          "checked": 6225,
+          "agree": 6225,
+          "noRate": 0,
+          "winsAtRateNot1": 2619,
+          "halfCentTies": 0
+        },
+        "siblingChecked": 6225,
+        "siblingBad": 0,
+        "siblingOffGrid": 0,
+        "siblingMissingFields": 0,
+        "populationIssues": []
+      },
+      "profileIds": [
+        "GROOMERS-11"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-11",
+          "coverage": "full",
+          "note": "EXACT in integer cents, in USD since 2026-10-05: every payline base payout (USD) × its integer bomb multiplier summed in BigInt must equal amount_won (USD) on all 6,205 non-buy entries, with no exception (was ±max(1e-6, 0.05 %) on doubles until 2026-09-26). The coins field is the same credit in the account's coins: amount_won_coins must equal round_half_up(amount_won × rate, 2 dp) on all 6,225 entries, rate = bet_amount / bet_amount_currency (the trigger's rate for free spins); 2,619 wins are converted at a rate other than 1, and no value lands on a half cent. Siblings compare like units only: amount_won = total_win_currency and amount_won_coins = total_win. A $50.00 stake is recorded as 49.9915 coins, so a $50 win is 49.99 coins (MANIFEST DL-5, money fields in two units). FAIL probed (a 0.40 credit set to 0.39 on all four fields; a coins credit one cent off its rate)"
+        }
+      ]
     },
     {
       "step": 8,
       "name": "Multiplier Provenance",
       "status": "PASS",
-      "detail": "4985/4985 payline multipliers match the published paytable (cluster-pays for 11-symbol base + 12-symbol bonus). 0 mismatched."
+      "detail": "4985/4985 payline multipliers match the published paytable (cluster-pays for 11-symbol base + 12-symbol bonus; src/loader.ts: 4985 paylines). 0 mismatched.",
+      "data": {
+        "betsExamined": 6205,
+        "paylinesChecked": 4985,
+        "matched": 4985,
+        "mismatched": 0,
+        "populationIssues": []
+      },
+      "profileIds": [
+        "GROOMERS-13"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-13",
+          "coverage": "full",
+          "note": "served-vs-declared half: all 4,985 payline multipliers EQUAL the published rules-endpoint paytable cell (exact since 2026-09-26; was a 1e-6 window), bound to EXPECTED_PAYLINES; the table and config are hash-pinned by Step 14; multiplier-symbol values are Step 27. FAIL probed (a multiplier moved 1e-7)"
+        }
+      ]
     },
     {
       "step": 9,
       "name": "Bet-Size Invariance",
       "status": "PASS",
-      "detail": "30/30 Phase B bets recompute byte-equal cells from (server_seed, client_seed, nonce). Stakes spanned: $1.000000000000000000, 5.000000000000000000, 9.500000000000000000, 18.500000000000000000, 27.500000000000000000, 50.000000000000000000. Stake is not an HMAC input — same seed → same grid regardless of stake."
+      "detail": "30/30 Phase B bets recompute byte-equal cells from (server_seed, client_seed, nonce) (src/loader.ts: 30). Stakes spanned: $1.000000000000000000, 5.000000000000000000, 9.500000000000000000, 18.500000000000000000, 27.500000000000000000, 50.000000000000000000. Stake is not an HMAC input — same seed → same grid regardless of stake.",
+      "data": {
+        "checked": 30,
+        "matched": 30,
+        "mismatched": 0,
+        "skipped": 0,
+        "distinctStakes": 6,
+        "populationIssues": []
+      },
+      "profileIds": [
+        "GROOMERS-12"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-12",
+          "coverage": "partial",
+          "note": "what IS asserted: all 30 Phase B entries ($1–$50) recompute the same 30-cell grid, bound to EXPECTED_PHASE_BETS.B; stake is not an HMAC input. PARTIAL: 30 elevated-stake bets against the profile floor of 100 (capture-origin — the capture plan ran 30); the stake-variation phase is labelled B, not C"
+        }
+      ]
     },
     {
       "step": 10,
       "name": "House Edge Audit (Zero Edge consistency)",
       "status": "PASS",
-      "detail": "6225/6225 bets have edge_multiplier = 1 (Zero Edge active). 0 deviations. Distinct stakes observed: 8. Stakes spanned 0.200000000000000000–50.000000000000000000. (Scaling-edge brackets > 1 are disclosed as R-BRACKET-EMPIRICAL in the audit report — they are verified analytically from the published schedule but not exercised at a Zero-Edge audit account.)"
+      "detail": "6225/6225 bets have edge_multiplier = 1 (Zero Edge active). 0 deviations. Distinct stakes observed: 7. Stakes spanned 0.2–50. (The scaling edge at any bracket is disclosed as R-BRACKET-EMPIRICAL in MANIFEST.md#limitations-and-trust — it is verified analytically from the published schedule but not exercised at a Zero-Edge audit account.)",
+      "profileIds": [
+        "GROOMERS-19"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-19",
+          "coverage": "full",
+          "note": "operator half: edge_multiplier = 1 (Zero Edge) on all 6,225 entries, compared, never used as the derivation; the derived half is Steps 29–32"
+        }
+      ]
     },
     {
       "step": 11,
-      "name": "Config Completeness",
+      "name": "Config Completeness & Paytable Coverage",
       "status": "PASS",
-      "detail": "Required config fields: 6/6 present. Paytable: base_game 11 symbols, bonus_game 12 symbols."
+      "detail": "Required config fields: 6/6 present. Paytable: base_game 11 symbols, bonus_game 12 symbols. Coverage: 62 of 96 (condition, symbol, cluster-tier) payout cells exercised by live play, above the 55-cell floor in src/loader.ts; no payline hit a cell outside the published table. The 34 unexercised cells are named in this step's data block — their return is established by the exhaustive 2^32 enumeration in Steps 29–32, not by live play.",
+      "data": {
+        "requiredConfigFields": 6,
+        "missingConfigFields": [],
+        "baseGameSymbols": 11,
+        "bonusGameSymbols": 12,
+        "totalPaytableCells": 96,
+        "exercisedCells": 62,
+        "minCellsExercised": 55,
+        "neverExercisedCells": [
+          "base_game|bonus|6",
+          "base_game|symbol_5|12",
+          "base_game|symbol_6|11",
+          "base_game|symbol_6|12",
+          "base_game|symbol_8|12",
+          "base_game|symbol_9|10",
+          "base_game|symbol_9|11",
+          "base_game|symbol_9|12",
+          "base_game|symbol_9|9",
+          "bonus_game|bonus|4",
+          "bonus_game|bonus|5",
+          "bonus_game|bonus|6",
+          "bonus_game|symbol_3|12",
+          "bonus_game|symbol_4|11",
+          "bonus_game|symbol_4|12",
+          "bonus_game|symbol_5|10",
+          "bonus_game|symbol_5|11",
+          "bonus_game|symbol_5|12",
+          "bonus_game|symbol_6|10",
+          "bonus_game|symbol_6|11",
+          "bonus_game|symbol_6|12",
+          "bonus_game|symbol_6|8",
+          "bonus_game|symbol_6|9",
+          "bonus_game|symbol_7|11",
+          "bonus_game|symbol_7|12",
+          "bonus_game|symbol_8|10",
+          "bonus_game|symbol_8|11",
+          "bonus_game|symbol_8|12",
+          "bonus_game|symbol_8|9",
+          "bonus_game|symbol_9|10",
+          "bonus_game|symbol_9|11",
+          "bonus_game|symbol_9|12",
+          "bonus_game|symbol_9|8",
+          "bonus_game|symbol_9|9"
+        ],
+        "maxMultiplierOnUnexercisedCell": 100,
+        "note": "Theoretical RTP for this game is derived from the exhaustive 2^32 enumeration and the exact bonus-session convolution (Steps 29-32), which reach every cell the engine can produce. An unexercised cell therefore reflects the size of the live capture, not an unverified return.",
+        "failures": []
+      },
+      "profileIds": [
+        "GROOMERS-15"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-15",
+          "coverage": "full",
+          "note": "6 required config fields present; 62 of the 96 (condition, symbol, cluster-tier) cells exercised, above the MIN_PAYTABLE_CELLS_EXERCISED = 55 floor; no payline outside the table; the 34 unexercised cells named, their return carried by the exhaustive enumeration (Steps 29–32)"
+        }
+      ]
     },
     {
       "step": 12,
       "name": "Epoch Size",
       "status": "PASS",
-      "detail": "116 epochs. Regular-bet size range: 20–50. Cap: 50. Over-cap: 0; under-50 (closing-out epochs): 2."
+      "detail": "116 epochs as declared in src/loader.ts: 114 of exactly 50 regular bets (the capture script rotated the seed every 50 bets; its schedule, not a tested Duel limit), plus the two documented phase close-outs of 20 and 30 regular bets",
+      "data": {
+        "epochs": 116,
+        "fullEpochs": 114,
+        "shortEpochSizes": [
+          20,
+          30
+        ],
+        "minSize": 20,
+        "maxSize": 50,
+        "issues": []
+      },
+      "profileIds": [
+        "GROOMERS-05"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-05",
+          "coverage": "full",
+          "note": "epoch half: 116 epochs, 114 at exactly 50 and the declared short epochs [20, 30]"
+        }
+      ]
     },
     {
       "step": 13,
-      "name": "Phase Labels",
+      "name": "Population & Phase Labels",
       "status": "PASS",
-      "detail": "Phases present: A, B, C, D, E. Missing: none. Extra: none."
+      "detail": "6225 entries (5750 regular, 475 free-spin records) and 117 seed records match the capture plan in src/loader.ts (code constants, not the dataset's own meta.phasesRun header); phases A, B, C, D, E all present with no extras",
+      "data": {
+        "phaseCounts": {
+          "A": 5248,
+          "B": 30,
+          "C": 223,
+          "D": 524,
+          "E": 200
+        },
+        "modeCounts": {
+          "spin": 5730,
+          "free_spin": 475,
+          "buy": 20
+        },
+        "regularBets": 5750,
+        "freeSpinRecords": 475,
+        "seedRecords": 117,
+        "populationIssues": []
+      },
+      "profileIds": [
+        "GROOMERS-05"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-05",
+          "coverage": "full",
+          "note": "population half: 6,225 entries (5,750 regular, 475 free spins), 117 seed records, phases A 5,248 / B 30 / C 223 / D 524 / E 200 and modes spin / free_spin / buy against src/loader.ts, not the dataset header"
+        }
+      ]
     },
     {
       "step": 14,
       "name": "Dataset Hash",
       "status": "PASS",
-      "detail": "Actual SHA-256: 3034cb1284bc1a87d82a0d8f914b19d7f1a8f16894ffe601242bd29e3873b967. Expected: 3034cb1284bc1a87d82a0d8f914b19d7f1a8f16894ffe601242bd29e3873b967. Match."
+      "detail": "Actual SHA-256: 3034cb1284bc1a87d82a0d8f914b19d7f1a8f16894ffe601242bd29e3873b967. Expected: 3034cb1284bc1a87d82a0d8f914b19d7f1a8f16894ffe601242bd29e3873b967. Match. Operator files under data/raw/: 10/10 match their pins in src/loader.ts",
+      "data": {
+        "expected": "3034cb1284bc1a87d82a0d8f914b19d7f1a8f16894ffe601242bd29e3873b967",
+        "actual": "3034cb1284bc1a87d82a0d8f914b19d7f1a8f16894ffe601242bd29e3873b967",
+        "match": true,
+        "rawFiles": [
+          {
+            "file": "client-seed-snapshot.json",
+            "pinned": "e0b1e4a62e78f28ed13c57d6cb3ce6885ee98a04b7c051b1e46b526c88b3e3db",
+            "actual": "e0b1e4a62e78f28ed13c57d6cb3ce6885ee98a04b7c051b1e46b526c88b3e3db",
+            "match": true
+          },
+          {
+            "file": "groomers-van-config-v1.4.json",
+            "pinned": "e08f41da9a1d2ab4a634e3f14dc2d52858520dc9620c327599cac1e5c09c2b87",
+            "actual": "e08f41da9a1d2ab4a634e3f14dc2d52858520dc9620c327599cac1e5c09c2b87",
+            "match": true
+          },
+          {
+            "file": "paytable-extracted-from-help.json",
+            "pinned": "d10e08fa0887c07d9123bd0d815a14fd61e74dee4cb2c0e2ed76efe56a98ec9a",
+            "actual": "d10e08fa0887c07d9123bd0d815a14fd61e74dee4cb2c0e2ed76efe56a98ec9a",
+            "match": true
+          },
+          {
+            "file": "paytable-from-rules-endpoint.json",
+            "pinned": "c3479bf62ee9ed45896506db8972a9b338b693345db47633687af440b27ffcd1",
+            "actual": "c3479bf62ee9ed45896506db8972a9b338b693345db47633687af440b27ffcd1",
+            "match": true
+          },
+          {
+            "file": "spin-1835724-request.json",
+            "pinned": "1586b652311511643cdba65f39f90b86516b11e624aaf3017e8d5c9f58b0711b",
+            "actual": "1586b652311511643cdba65f39f90b86516b11e624aaf3017e8d5c9f58b0711b",
+            "match": true
+          },
+          {
+            "file": "spin-1835724-response.json",
+            "pinned": "e1ec2db3e732f96aef23c232767abd8972655656ad21adbac67381be410089ea",
+            "actual": "e1ec2db3e732f96aef23c232767abd8972655656ad21adbac67381be410089ea",
+            "match": true
+          },
+          {
+            "file": "spin-1835725-request.json",
+            "pinned": "1586b652311511643cdba65f39f90b86516b11e624aaf3017e8d5c9f58b0711b",
+            "actual": "1586b652311511643cdba65f39f90b86516b11e624aaf3017e8d5c9f58b0711b",
+            "match": true
+          },
+          {
+            "file": "spin-1835725-response.json",
+            "pinned": "eef6c74abfb51d92c7ceb6523c96ec8d93032c5c16317412d0a84349c978eb54",
+            "actual": "eef6c74abfb51d92c7ceb6523c96ec8d93032c5c16317412d0a84349c978eb54",
+            "match": true
+          },
+          {
+            "file": "slots-2026-10-05.json",
+            "pinned": "f112728a0343c0cf8f6ed05d1801fc828be34b99bbaafdf1b20005534a4f7dc6",
+            "actual": "f112728a0343c0cf8f6ed05d1801fc828be34b99bbaafdf1b20005534a4f7dc6",
+            "match": true
+          },
+          {
+            "file": "slots-groomers-van-rules-2026-10-05.json",
+            "pinned": "c3479bf62ee9ed45896506db8972a9b338b693345db47633687af440b27ffcd1",
+            "actual": "c3479bf62ee9ed45896506db8972a9b338b693345db47633687af440b27ffcd1",
+            "match": true
+          }
+        ]
+      },
+      "profileIds": [
+        "GROOMERS-26",
+        "GROOMERS-13"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-26",
+          "coverage": "full",
+          "note": "the uncompressed dataset's SHA-256 against EXPECTED_HASH (the pre-flight also aborts on a mismatch before any step runs); since 2026-09-26 the operator files under data/raw/ against RAW_FILE_PINS (8 files; 10 since 2026-10-05, adding the /api/v2/slots and /rules bodies of the duel.com config as fetched 2026-10-05 in a logged-in session (read-only GET)) — a mismatch or absence FAILs. FAIL probed (one byte of the config changed)"
+        },
+        {
+          "id": "GROOMERS-13",
+          "coverage": "full",
+          "note": "provenance half: the reel-weight config and both paytables (rules endpoint, in-game help) are the operator's published artifacts, pinned by hash since 2026-09-26"
+        }
+      ]
     },
     {
       "step": 15,
       "name": "Phase D Client Seed Variation",
       "status": "PASS",
-      "detail": "524 Phase D entries (incl. free spins). 500 regular bets across 10 unique client seeds (expected 10 × 50)."
+      "detail": "524 Phase D entries (incl. free spins); 500 regular bets across 10 distinct auditor client seeds, matching the 10 × 50 plan in src/loader.ts",
+      "data": {
+        "phaseDEntries": 524,
+        "phaseDRegularBets": 500,
+        "distinctClientSeeds": 10,
+        "issues": []
+      },
+      "profileIds": [
+        "GROOMERS-06"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-06",
+          "coverage": "partial",
+          "note": "Phase D half: 500 regular bets on 10 distinct auditor client seeds (the 10 × 50 plan), recomputed in Step 5. PARTIAL for the reasons on Step 6"
+        }
+      ]
     },
     {
       "step": 16,
       "name": "Anti-Circularity",
       "status": "PASS",
-      "detail": "Monte Carlo cross-check of the exact-enumerated headline RTP (99.9720%, Step 32). Independent 30,000,000-spin Monte Carlo: base RTP 56.13% per spin + bonus contribution (trigger probability 0.4407% × avg session 99.6647× stake across 132,222 integrated trigger+session bonus sessions) → 100.06% blended. MC std error on blended RTP at this sample size is ~0.3pp (bonus heavy-tail dominated); the cross-check agrees with the enumerated value within sampling noise. Both estimates computed from operator's published per-reel weights, paytable, and cascade algorithm — no operator-supplied probability table. Pass-1 simulator uses the same gravity-fill cascade independently validated byte-exact against captured data in Step 28."
+      "detail": "The Monte Carlo simulator (30,000,000 base spins, 132,222 bonus sessions) is scored against the EXACT 2^32 enumeration and session convolution — two independent computations from the operator's published weights, paytable and cascade algorithm, with no operator-supplied probability table and without anchoring on the operator's 100% claim (Step 32 scores the claim). Base RTP, trigger probability, mean session payout and blended RTP must each sit within 5 standard errors of the exact figure (+ the convolution's declared rounding bound where a session mean is involved); the standard errors are computed from the exact variances in the pinned artifacts. Recomputed from what ships: trigger probability from the trigger count, session count from the per-scatter distribution, blended RTP from its parts. The 30M per-spin rows do not ship, so the base and session totals themselves are read as scalars. Negative control (added 2026-09-26): the same comparison is run against the anchor each corrupted published rule would predict, and every required one must be rejected (trigger threshold 3 → 4 scatters; spins-per-scatter table shifted one tier up (3→10, 4→12, 5→14, 6+→14)); a power probe (spins-per-scatter table shifted one tier down for 4+ scatters (3→8, 4→8, 5→10, 6+→12) — power probe) is reported with its z in the data block, not scored. All four components within bound; 2/2 required corrupted models rejected. Figures in this step's data block.",
+      "data": {
+        "anchor": "exact 2^32 enumeration + exact session convolution (Step 32 derivation), NOT the operator claim",
+        "kSigma": 5,
+        "components": [
+          {
+            "name": "baseRTP",
+            "monteCarlo": 0.5613237633291404,
+            "exact": 0.5613760344082871,
+            "standardError": 0.00017959225067774645,
+            "buffer": 0,
+            "deviation": 0.00005227107914673734,
+            "zScore": 0.2910542016678136,
+            "bound": 0.0008979612533887323,
+            "within": true
+          },
+          {
+            "name": "triggerProbability",
+            "monteCarlo": 0.0044074,
+            "exact": 0.004404200939461589,
+            "standardError": 0.000012089670458076231,
+            "buffer": 0,
+            "deviation": 0.0000031990605384108264,
+            "zScore": 0.2646110619395557,
+            "bound": 0.000060448352290381154,
+            "within": true
+          },
+          {
+            "name": "sessionPayout",
+            "monteCarlo": 99.66465792379401,
+            "exact": 99.52860319078496,
+            "standardError": 0.45452973217749787,
+            "buffer": 0.09574271077563382,
+            "deviation": 0.1360547330090469,
+            "zScore": 0.2993307662344877,
+            "bound": 2.3683913716631233,
+            "within": true
+          },
+          {
+            "name": "blendedRTP",
+            "monteCarlo": 1.0005857766624702,
+            "exact": 0.9997200020844419,
+            "standardError": 0.002515856192421112,
+            "buffer": 0.00042167013674464563,
+            "deviation": 0.0008657745780282777,
+            "zScore": 0.3441272122931268,
+            "bound": 0.013000951098850206,
+            "within": true
+          }
+        ],
+        "operatorClaimRTP": 1,
+        "baseSpins": 30000000,
+        "bonusSessionsRun": 132222,
+        "negativeControls": [
+          {
+            "name": "trigger threshold 3 → 4 scatters",
+            "required": true,
+            "rejected": true,
+            "rejectedBy": [
+              "triggerProbability",
+              "sessionPayout",
+              "blendedRTP"
+            ],
+            "maxZ": 1233.1541436647258
+          },
+          {
+            "name": "spins-per-scatter table shifted one tier up (3→10, 4→12, 5→14, 6+→14)",
+            "required": true,
+            "rejected": true,
+            "rejectedBy": [
+              "sessionPayout",
+              "blendedRTP"
+            ],
+            "maxZ": 47.8395747661314
+          },
+          {
+            "name": "spins-per-scatter table shifted one tier down for 4+ scatters (3→8, 4→8, 5→10, 6+→12) — power probe",
+            "required": false,
+            "rejected": false,
+            "rejectedBy": [],
+            "maxZ": 4.34509909338052
+          }
+        ],
+        "issues": []
+      },
+      "profileIds": [
+        "GROOMERS-18"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-18",
+          "coverage": "full",
+          "note": "the Monte Carlo (30,000,000 base spins, 132,222 sessions) is scored against the EXACT 2^32 enumeration and session convolution — independent computations from the published weights, paytable and cascade rules, no operator probability table — within 5 SE per component. NEGATIVE CONTROL added 2026-09-26 (the Duel Dice Step 13 pattern): the same comparison is run against the anchor re-derived from the same pinned artifacts under a corrupted published rule, and each required control must be rejected — trigger threshold 3 → 4 scatters (rejected on trigger probability, session payout and blended RTP, max z 1,233) and the spins-per-scatter table shifted one tier up (rejected on session payout and blended RTP, max z 47.8). A third corruption written with them (the table shifted one tier DOWN for 4+ scatters) was NOT rejected on the first run (max z 4.35 < 5) — it is kept as a reported power probe, not a required control, and disclosed (MANIFEST DL-9): the comparison cannot separate a change confined to the rare 4+-scatter triggers at 132,222 sessions. FAIL probed (M16b: the corruption removed from the threshold control)"
+        }
+      ]
     },
     {
       "step": 17,
       "name": "Simulation Pass 1",
       "status": "PASS",
-      "detail": "Per-reel chi-squared (Bonferroni α=0.0017): 0/6 fails. reel 0: χ²=8.63, p=0.5672; reel 1: χ²=7.08, p=0.7176; reel 2: χ²=5.82, p=0.8300; reel 3: χ²=9.39, p=0.4956; reel 4: χ²=10.95, p=0.3613; reel 5: χ²=4.94, p=0.8954. Serial independence (n=100k payouts): lag-1 |z|=0.57 (threshold 3.14), runs p=0.9666 (threshold 0.0017). All checks within FWER-corrected thresholds."
+      "detail": "Per-reel chi-squared on the initial-deal symbol distribution, Bonferroni-corrected across 6 reels: 0/6 fail, with every p-value recomputed from its shipped chi² and df. Serial independence on 100k per-spin payouts: lag-1 |z| must be below bonferroniCriticalZ(0.01, 6) and runs p above 0.01/6, thresholds recomputed. The simulator's own verdict scalars must agree with the recomputation. The symbol counts and the payout series do not ship; their statistics are read as shipped. All checks within FWER-corrected thresholds. Statistics in this step's data block.",
+      "data": {
+        "bonferroniAlpha": 0.0016666666666666668,
+        "reels": 6,
+        "chi2FailsBonferroni": 0,
+        "chi2FailsBonferroniRecomputed": 0,
+        "perReelChiSquared": [
+          {
+            "reel": 0,
+            "chi2": 8.63358187521482,
+            "df": 10,
+            "pvalue": 0.567194617890737,
+            "bins": 11
+          },
+          {
+            "reel": 1,
+            "chi2": 7.083008386248691,
+            "df": 10,
+            "pvalue": 0.7175859073061481,
+            "bins": 11
+          },
+          {
+            "reel": 2,
+            "chi2": 5.822073281862148,
+            "df": 10,
+            "pvalue": 0.8299837107023167,
+            "bins": 11
+          },
+          {
+            "reel": 3,
+            "chi2": 9.389249599093704,
+            "df": 10,
+            "pvalue": 0.4956031932894166,
+            "bins": 11
+          },
+          {
+            "reel": 4,
+            "chi2": 10.952093024828972,
+            "df": 10,
+            "pvalue": 0.36126257673511586,
+            "bins": 11
+          },
+          {
+            "reel": 5,
+            "chi2": 4.936113190925843,
+            "df": 10,
+            "pvalue": 0.8954046198080439,
+            "bins": 11
+          }
+        ],
+        "perReelRecomputed": [
+          {
+            "reel": 0,
+            "chi2": 8.63358187521482,
+            "df": 10,
+            "pvalueRecomputed": 0.567194617890737
+          },
+          {
+            "reel": 1,
+            "chi2": 7.083008386248691,
+            "df": 10,
+            "pvalueRecomputed": 0.7175859073061481
+          },
+          {
+            "reel": 2,
+            "chi2": 5.822073281862148,
+            "df": 10,
+            "pvalueRecomputed": 0.8299837107023167
+          },
+          {
+            "reel": 3,
+            "chi2": 9.389249599093704,
+            "df": 10,
+            "pvalueRecomputed": 0.4956031932894166
+          },
+          {
+            "reel": 4,
+            "chi2": 10.952093024828972,
+            "df": 10,
+            "pvalueRecomputed": 0.36126257673511586
+          },
+          {
+            "reel": 5,
+            "chi2": 4.936113190925843,
+            "df": 10,
+            "pvalueRecomputed": 0.8954046198080439
+          }
+        ],
+        "serialIndependence": {
+          "lag1Rho": 0.0018063073566666912,
+          "lag1AbsZ": 0.5712045401384875,
+          "runsP": 0.9665820296331766,
+          "runsZ": 0.04189530685583444,
+          "lag1ZThreshold": 3.1439802850470713,
+          "runsPThreshold": 0.0016666666666666668,
+          "passes": true
+        },
+        "serialIndependenceRecomputed": true,
+        "issues": []
+      },
+      "profileIds": [
+        "GROOMERS-20"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-20",
+          "coverage": "partial",
+          "note": "what IS asserted: per-reel initial-deal chi-squared, Bonferroni over 6 reels, p recomputed from the shipped chi² and df; lag-1 and runs thresholds recomputed; simulator verdicts must agree. PARTIAL: the symbol counts and the payout series do not ship, so the statistics are read, not re-derived; no part of the 30M-spin run is replayed by verify"
+        }
+      ]
     },
     {
       "step": 18,
       "name": "Pass 2 Cherry-Pick Detection",
       "status": "PASS",
-      "detail": "Forward-replay across 115 committed server seeds × 10,000 nonces (1,150,000 simulated outcomes). Each seed's early window (nonces 0..49) and late window (50..9999) chi-squared (1 d.o.f., win/no-win) against the exact enumerated win rate 45.58% from outputs/base-2pow32.json. Cherry-pick signature: early p<0.05 AND late p≥0.05. Flags: 4/115 (~6 expected by chance at 5% per-seed false-positive rate). Binomial P(X ≥ 4 | n=115, p=0.05) = 0.8321 → PASS (threshold p ≥ 0.01)."
+      "detail": "(a) Aggregate captured RTP across 5,730 base spins in 115 epochs, RECOMPUTED from the dataset (src/loader.ts: 5730 spins, 115 epochs), must sit within |z| < 3 of the Pass 1 reference mean; z recomputed. (b) Forward-replay (115 epochs × 10,000 nonces, early=0..49 vs late): 4/115 cherry-pick flags re-derived from p-values recomputed from each row's chi² (early p<0.05 AND late p≥0.05; bins=win/no-win); binomial p must be ≥ 0.01; rows must cover exactly the captured epochs; expected win rate must be the pinned 2^32 base win_rate. The simulator's own figures must agree with every recomputation. Not recomputed: the Pass 1 reference mean/std (100k-spin sample, not shipped) and the per-nonce win counts behind each chi². Per-seed informational: 5/115 seeds above the Pass 1 95th percentile (expected ~6). Both parts PASS. Statistics in this step's data block.",
+      "data": {
+        "totalCapturedSpins": 5730,
+        "totalCapturedSpinsRecomputed": 5730,
+        "seedsReplayed": 115,
+        "epochsRecomputed": 115,
+        "capturedAggregateRTP": 0.5687433507853399,
+        "capturedAggregateRTPRecomputed": 0.5687433507853399,
+        "pass1ReferenceMean": 0.5570589999999948,
+        "pass1PerSpinStd": 0.9716173171163572,
+        "aggregateZScore": 0.9103044193743386,
+        "aggregateZScoreRecomputed": 0.9103044193743386,
+        "aggregateThreshold": 3,
+        "aggregateRiskLevel": "WITHIN EXPECTED RANGE",
+        "forwardReplay": {
+          "epochs": 115,
+          "noncesPerSeed": 10000,
+          "epochLength": 50,
+          "bins": "win/no-win",
+          "expectedWinRate": 0.4558327489066869,
+          "cherryPickFlags": 4,
+          "cherryPickFlagsRecomputed": 4,
+          "cherryPickPValue": 0.8321114541424309,
+          "cherryPickPValueRecomputed": 0.8321114541424309,
+          "cherryPickVerdict": "PASS"
+        },
+        "perSeedAboveP95": 5,
+        "perSeedBinomialP": 0.6866030356248257,
+        "perSeedExpectedAt5pct": 6,
+        "issues": []
+      },
+      "profileIds": [
+        "GROOMERS-21"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-21",
+          "coverage": "partial",
+          "note": "what IS asserted: 115 epochs × 10,000 nonces (rows bound to the captured epochs), early 0–49 vs late flags re-derived from each row's chi², binomial p ≥ 0.01; aggregate captured RTP z recomputed. PARTIAL: the per-nonce win counts behind each chi² are not replayed; win/no-win bins, not the return of the configs served; no detection power printed"
+        }
+      ]
     },
     {
       "step": 19,
       "name": "Cluster Pays Anywhere",
       "status": "PASS",
-      "detail": "4982/4982 cluster paylines have count = (cells of symbol) + (cells of wild). Confirms the \"anywhere with wild substitution\" rule."
+      "detail": "4982/4982 cluster paylines have count = (cells of symbol) + (cells of wild) (src/loader.ts: 4982). Confirms the \"anywhere with wild substitution\" rule.",
+      "data": {
+        "checked": 4982,
+        "matched": 4982,
+        "mismatched": 0,
+        "populationIssue": null
+      },
+      "profileIds": [
+        "GROOMERS-10"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-10",
+          "coverage": "full",
+          "note": "cluster half: all 4,982 cluster paylines have count = symbol cells + wild cells (bound to EXPECTED_CLUSTER_PAYLINES)"
+        }
+      ]
     },
     {
       "step": 20,
       "name": "Tumble Cascade Structural Integrity",
       "status": "PASS",
-      "detail": "4323/4323 cascade rounds preserve un-removed cells at the bottom of their column (gravity rule). 0 gravity violations. Per-cell RNG verification of NEW drop-fill cells: covered byte-exactly by Step 28 (Cascade RNG Byte-Exact Replay) — R-CASCADE-RNG closed."
+      "detail": "4323/4323 cascade rounds preserve un-removed cells at the bottom of their column (gravity rule) (src/loader.ts: 4323). 0 gravity violations or missing grids. Per-cell RNG verification of NEW drop-fill cells: covered byte-exactly by Step 28 (Cascade RNG Byte-Exact Replay) — R-CASCADE-RNG closed.",
+      "data": {
+        "checked": 4323,
+        "structurallyOk": 4323,
+        "mismatched": 0,
+        "populationIssue": null
+      },
+      "profileIds": [
+        "GROOMERS-10"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-10",
+          "coverage": "full",
+          "note": "gravity half: all 4,323 cascade rounds keep un-removed cells at the bottom of their column (EXPECTED_CASCADE_ROUNDS)"
+        }
+      ]
     },
     {
       "step": 21,
       "name": "Wild Substitution Rule",
       "status": "PASS",
-      "detail": "410 captured spins have ≥ 2 simultaneous payable-symbol clusters AND a shared wild contributing to all of them. Confirms the help panel rule \"wilds contribute to every cluster win\" — a single wild lifts multiple symbols simultaneously. Examples: bet 1964428: symbol_1+symbol_7 share 1 wild(s) | bet 1964469: symbol_4+symbol_2 share 2 wild(s) | bet 1964539: symbol_3+symbol_2 share 3 wild(s)"
+      "detail": "410/410 rounds with ≥ 2 simultaneous paying cluster symbols and ≥ 1 wild credit every wild to EVERY cluster (src/loader.ts: 410 such rounds). 0 rounds pay a cluster whose count leaves out a wild on the grid. Rule tested: \"wilds contribute to every cluster win\". Examples: bet 1964428: symbol_1+symbol_7 share 1 wild(s) | bet 1964469: symbol_4+symbol_2 share 2 wild(s) | bet 1964539: symbol_3+symbol_2 share 3 wild(s)",
+      "data": {
+        "rounds": 410,
+        "allWildsCreditedToEveryCluster": 410,
+        "violations": 0,
+        "populationIssue": null
+      },
+      "profileIds": [
+        "GROOMERS-10"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-10",
+          "coverage": "full",
+          "note": "wild half: all 410 rounds with ≥ 2 paying symbols and a wild credit the wild to every cluster"
+        }
+      ]
     },
     {
       "step": 22,
       "name": "Bonus Trigger",
       "status": "PASS",
-      "detail": "53 captured trigger events. 53/53 match the published spins_per_scatters table {3→8, 4→10, 5→12, 6→14}. Independent grid cross-check: 53/53 captured triggers have a final-grid scatter count matching the operator-reported trigger_data.scatter_count (catches dual-field inflation)."
+      "detail": "53 captured trigger events (src/loader.ts: 53). 53/53 match the published spins_per_scatters table {3→8, 4→10, 5→12, 6→14}. Independent grid cross-check: 53/53 captured triggers have a final-grid scatter count matching the operator-reported trigger_data.scatter_count (catches dual-field inflation).",
+      "profileIds": [
+        "GROOMERS-17"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-17",
+          "coverage": "full",
+          "note": "trigger half: 53/53 triggers match spins_per_scatters and the final-grid scatter count"
+        }
+      ]
     },
     {
       "step": 23,
       "name": "Retrigger Behaviour",
       "status": "PASS",
-      "detail": "53 bonus sessions captured. 1 retrigger events observed (free spins in which the cumulative scatter count across all cascades reached ≥ 3). Per-session retrigger cap = 3 (operator config). 0 sessions exceeded the cap. Examples: bet 1987998: 3 scatters in final cascade view (retrigger)"
+      "detail": "53 bonus sessions captured; 475 free spins examined (src/loader.ts: 53 sessions, 475 free spins). 1 retrigger events observed (free spins in which the cumulative scatter count across all cascades reached ≥ 3). Per-session retrigger cap = 3 (operator config). 0 sessions exceeded the cap. Examples: bet 1987998: 3 scatters in final cascade view (retrigger)",
+      "data": {
+        "sessions": 53,
+        "freeSpinsExamined": 475,
+        "unattachedFreeSpins": 0,
+        "freeSpinsWithoutGrid": 0,
+        "retriggers": 1,
+        "populationIssues": []
+      },
+      "profileIds": [
+        "GROOMERS-17"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-17",
+          "coverage": "full",
+          "note": "retrigger half: 53 sessions, 475 free spins, retrigger cap 3 never exceeded"
+        }
+      ]
     },
     {
       "step": 24,
       "name": "Cosmetic Buy-Spin Disclosure",
       "status": "PASS",
-      "detail": "20 buy bets captured. 20/20 carry the operator's bonus-buy disclosure (verifyData._verify_session.is_bonus_buy=true) AND have no cluster paylines (only the guaranteed 4-scatter scatter pay; cosmetic grid never forms clusters, per operator disclosure)."
+      "detail": "20 buy bets captured (src/loader.ts: 20). 20/20 carry the operator's bonus-buy disclosure (verifyData._verify_session.is_bonus_buy=true) AND have no cluster paylines (only the guaranteed 4-scatter scatter pay; cosmetic grid never forms clusters, per operator disclosure).",
+      "profileIds": [
+        "GROOMERS-17"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-17",
+          "coverage": "full",
+          "note": "buy-disclosure half: 20/20 buys carry is_bonus_buy and no cluster payline"
+        }
+      ]
     },
     {
       "step": 25,
       "name": "Buy-Bonus Structure",
       "status": "PASS",
-      "detail": "20 buys captured. 20/20 display exactly 4 scatters (per buy_scatter_count=4). 20/20 award exactly 10 free spins (per spins_per_scatters[4]=10)."
+      "detail": "20 buys captured (src/loader.ts: 20). 20/20 display exactly 4 scatters (per buy_scatter_count=4). 20/20 award exactly 10 free spins (per spins_per_scatters[4]=10).",
+      "profileIds": [
+        "GROOMERS-17"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-17",
+          "coverage": "full",
+          "note": "buy-structure half: 20/20 show 4 scatters and award 10 free spins"
+        }
+      ]
     },
     {
       "step": 26,
       "name": "Free-Spin Payout Reconciliation",
       "status": "PASS",
-      "detail": "475/475 captured free spins reconcile their amount_won to sum(base_payout × max(bomb_multiplier, 1)) across paylines. 0 mismatched."
+      "detail": "475/475 captured free spins reconcile amount_won (USD) to sum(base_payout × max(bomb_multiplier, 1)) across paylines exactly in integer cents (src/loader.ts: 475). 0 mismatched.",
+      "data": {
+        "checked": 475,
+        "reconciled": 475,
+        "mismatched": 0,
+        "populationIssue": null
+      },
+      "profileIds": [
+        "GROOMERS-17"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-17",
+          "coverage": "full",
+          "note": "free-spin payout half: 475/475 reconcile exactly in integer cents (since 2026-09-26), against amount_won (USD) since 2026-10-05"
+        }
+      ]
     },
     {
       "step": 27,
       "name": "Bonus Multiplier Symbol",
       "status": "PASS",
-      "detail": "Multiplier symbol appearances: 935 in bonus_game (expected), 0 in base_game (must be 0). Observed multiplier values across all bonus spins: {2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 25, 50, 100, 250}. Published values: {2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 25, 50, 100, 250}. Mode separation confirms multiplier_bombs_applies_to: 'feature' rule."
+      "detail": "Multiplier symbol appearances: 935 in bonus_game (src/loader.ts: 935), 0 in base_game (must be 0). Observed multiplier values across all bonus spins: {2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 25, 50, 100, 250}. Published values: {2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 25, 50, 100, 250}. 0 observed value(s) outside the published set (must be 0); 0 published value(s) never observed. Mode separation confirms multiplier_bombs_applies_to: 'feature' rule.",
+      "data": {
+        "bonusGameSightings": 935,
+        "baseGameSightings": 0,
+        "missingValue": 0,
+        "observedValues": [
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "10",
+          "12",
+          "15",
+          "25",
+          "50",
+          "100",
+          "250"
+        ],
+        "publishedValues": [
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "10",
+          "12",
+          "15",
+          "25",
+          "50",
+          "100",
+          "250"
+        ],
+        "unpublishedObserved": [],
+        "publishedNeverObserved": [],
+        "issues": []
+      },
+      "profileIds": [
+        "GROOMERS-17",
+        "GROOMERS-13"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-17",
+          "coverage": "full",
+          "note": "multiplier-symbol half: 935 appearances in bonus only, 0 in base"
+        },
+        {
+          "id": "GROOMERS-13",
+          "coverage": "full",
+          "note": "value half: every observed multiplier value is in the published set; all 14 observed"
+        }
+      ]
     },
     {
       "step": 28,
       "name": "Cascade RNG Byte-Exact Replay",
       "status": "PASS",
-      "detail": "4323 captured cascades replayed via deriveTumbleSeed(outcome_index, round_index, tumble_index) → fresh PCG32 → generateGrid + gravity-fill. 129690/129690 cells reproduce byte-exact. 146/146 newly-generated cascade multiplier cells byte-exact; all multiplier-symbol values across the dataset lie within the published set and payouts reconcile (Step 7). 2974 spins exercised; 20 skipped (buys / no outcome_index). Closes R-CASCADE-RNG."
+      "detail": "4323 captured cascades replayed via deriveTumbleSeed(outcome_index, round_index, tumble_index) → fresh PCG32 → generateGrid + gravity-fill. 129690/129690 cells reproduce byte-exact. 146/146 captured multiplier values reproduce byte-exact. 2974 spins exercised; 20 skipped (the declared bonus buys; bound to EXPECTED_MODE_BETS.buy, cascades bound to EXPECTED_CASCADE_ROUNDS). Closes R-CASCADE-RNG.",
+      "profileIds": [
+        "GROOMERS-10",
+        "GROOMERS-17"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-10",
+          "coverage": "full",
+          "note": "cascade half: 4,323 cascades replayed from deriveTumbleSeed → PCG32 → grid + gravity fill, 129,690/129,690 cells and 146/146 multiplier values byte-exact"
+        },
+        {
+          "id": "GROOMERS-17",
+          "coverage": "full",
+          "note": "bonus cascades are among the 4,323 replayed byte-exact"
+        }
+      ]
     },
     {
       "step": 29,
       "name": "Base 2³² artifact integrity",
       "status": "PASS",
-      "detail": "SHA-256 matches pinned hash (0b890eef7153fcdf…)"
+      "detail": "SHA-256 matches pinned hash (0b890eef7153fcdf…)",
+      "profileIds": [
+        "GROOMERS-27"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-27",
+          "coverage": "partial",
+          "note": "base 2^32 enumeration artifact hash-pinned (see Step 33)"
+        }
+      ]
     },
     {
       "step": 30,
       "name": "Bonus 2³² artifact integrity",
       "status": "PASS",
-      "detail": "SHA-256 matches pinned hash (e878256256cf59ed…)"
+      "detail": "SHA-256 matches pinned hash (e878256256cf59ed…)",
+      "profileIds": [
+        "GROOMERS-27"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-27",
+          "coverage": "partial",
+          "note": "bonus 2^32 enumeration artifact hash-pinned (see Step 33)"
+        }
+      ]
     },
     {
       "step": 31,
       "name": "Session-EV artifact integrity",
       "status": "PASS",
-      "detail": "all 4 exact session artifacts (initial_spins 8/10/12/14) match pinned SHA-256"
+      "detail": "all 4 exact session artifacts (initial_spins 8/10/12/14) match pinned SHA-256",
+      "profileIds": [
+        "GROOMERS-27"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-27",
+          "coverage": "partial",
+          "note": "the 4 exact session-EV artifacts hash-pinned (see Step 33)"
+        }
+      ]
     },
     {
       "step": 32,
       "name": "Headline game RTP derivation",
       "status": "PASS",
-      "detail": "base RTP=0.561376, P(trigger)=0.00440420 (1/227.1), E[session|trig]=99.5286, total RTP = 0.999720 = 99.9720%  (operator claim 100%, deviation 0.0280%)"
+      "detail": "Total RTP derived from the exhaustive 2^32 base enumeration plus the exact bonus-session convolution — base RTP + P(trigger) × E[session | trigger]; the base RTP equals the base artifact's own sum / count (relative 1e-12) and its histogram's mean (within 0.000001). The derived total is the one row of the RTP table, held to the published figure by RTP-CLAIM on this step (band ±0.1 pp), not here. Figures in this step's data block.",
+      "data": {
+        "baseRTP": 0.5613760344082871,
+        "baseRTPFromSum": 0.5613760344082871,
+        "baseRTPFromHistogram": 0.5613760325359188,
+        "triggerProbability": 0.004404200939461589,
+        "triggerOneIn": 227.0559435742388,
+        "conditionalSessionEV": 99.52860319078496,
+        "totalRTP": 0.9997200020844419,
+        "sumRelTol": 1e-12,
+        "histAbsTol": 0.000001
+      },
+      "profileIds": [
+        "GROOMERS-19"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-19",
+          "coverage": "full",
+          "note": "derived half: total RTP = base RTP (exhaustive 2^32) + P(trigger) × E[session | trigger] (exact convolution) = 99.9720 %, 0.028 pp below the operator's 100 % claim. Since 14 Oct 2026 (FIXPASS2 C3) the step scores the derivation only (the base RTP must equal the base artifact's own sum / count and histogram mean), and the derived total is the RTP claim table's one row, held to the claim by RTP-CLAIM 1.2.0, switched on (src/rtp-settings.ts): outcome PASS, within the 0.1 pp band; a house-side miss would be an operator-origin FLAG here and the verdict RTP FIGURE OVERSTATED (exit 5), never NOT PROVABLY FAIR. Until 14 Oct the step compared the total with the claim itself (PASS within 0.1 pp, FLAG 0.1–1 pp, FAIL beyond). Note restated 19 Oct 2026 (Mike's QA)"
+        }
+      ]
     },
     {
       "step": 33,
       "name": "Artifact Integrity (pinned artifacts of record)",
       "status": "PASS",
-      "detail": "12 artifact(s) checked against src/artifact-pins.ts; base-2pow32.json matches its pin; bonus-2pow32-uncapped.json matches its pin; bonus-2pow32.json matches its pin; bonus-session-ev-exact-10.json matches its pin; bonus-session-ev-exact-12.json matches its pin; bonus-session-ev-exact-14.json matches its pin; bonus-session-ev-exact-8.json matches its pin; bonus-session-ev.json matches its pin; cpu-base-2pow32.json matches its pin; cpu-bonus-2pow32.json matches its pin; rtp-convergence.html matches its pin; simulation-results.json matches its pin"
+      "detail": "13 artifact(s) checked against src/artifact-pins.ts; 13 match, 0 missing or altered. base-2pow32.json matches its pin; bonus-2pow32-uncapped.json matches its pin; bonus-2pow32.json matches its pin; bonus-session-ev-exact-10.json matches its pin; bonus-session-ev-exact-12.json matches its pin; bonus-session-ev-exact-14.json matches its pin; bonus-session-ev-exact-8.json matches its pin; bonus-session-ev-exact.json matches its pin; bonus-session-ev.json matches its pin; cpu-base-2pow32.json matches its pin; cpu-bonus-2pow32.json matches its pin; rtp-convergence.html matches its pin; simulation-results.json matches its pin",
+      "data": {
+        "checked": 13,
+        "matched": 13,
+        "missingOrAltered": 0,
+        "files": [
+          {
+            "file": "base-2pow32.json",
+            "status": "match"
+          },
+          {
+            "file": "bonus-2pow32-uncapped.json",
+            "status": "match"
+          },
+          {
+            "file": "bonus-2pow32.json",
+            "status": "match"
+          },
+          {
+            "file": "bonus-session-ev-exact-10.json",
+            "status": "match"
+          },
+          {
+            "file": "bonus-session-ev-exact-12.json",
+            "status": "match"
+          },
+          {
+            "file": "bonus-session-ev-exact-14.json",
+            "status": "match"
+          },
+          {
+            "file": "bonus-session-ev-exact-8.json",
+            "status": "match"
+          },
+          {
+            "file": "bonus-session-ev-exact.json",
+            "status": "match"
+          },
+          {
+            "file": "bonus-session-ev.json",
+            "status": "match"
+          },
+          {
+            "file": "cpu-base-2pow32.json",
+            "status": "match"
+          },
+          {
+            "file": "cpu-bonus-2pow32.json",
+            "status": "match"
+          },
+          {
+            "file": "rtp-convergence.html",
+            "status": "match"
+          },
+          {
+            "file": "simulation-results.json",
+            "status": "match"
+          }
+        ]
+      },
+      "profileIds": [
+        "GROOMERS-27"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-27",
+          "coverage": "partial",
+          "note": "all 13 tracked artifacts under outputs/ hash-checked against src/artifact-pins.ts (absent/altered FAILs), each un-ignored by name; verify writes only to outputs/run/ unless PF_EMIT=1; since 2026-09-26 simulation-results.json carries no generatedAt / executionTimeMs (re-pinned) and verification-results.json no generatedAt. PARTIAL: the five 2^32 enumeration artifacts still carry `elapsed_sec` (run metadata, disclosed MANIFEST DL-6); no declared value domains"
+        }
+      ]
+    },
+    {
+      "step": 34,
+      "name": "Max-Win Cap & Payout Bounds (GROOMERS-14)",
+      "status": "PASS",
+      "detail": "cap 5000× from the operator config (max_multiplier), applied by the enumerators (capped bonus 2^32 max_payout within it; all 4 exact session artifacts declare max_win_x 5000); all 6225 served entries have total_multiplier ≤ 5000 and credit ≤ 5000 × stake (exact 18-dp decimals), and all 53 bonus sessions' summed credits ≤ 5000 × stake; the RTP the per-spin cap removes (uncapped − capped 2^32 bonus enumeration, per bonus spin) and its upper bound on the whole-game RTP (P(trigger) × 44 spins × that difference), the largest served multipliers and each session artifact's cap-hit probability are in this step's data block. The session-level cap's removed return is not enumerated (no uncapped session convolution is pinned)",
+      "data": {
+        "cap": 5000,
+        "roundsChecked": 6225,
+        "sessionsChecked": 53,
+        "largestServedTotalMultiplier": 630,
+        "largestServedWinOverStake": 630,
+        "largestSessionWinOverStake": 647.1,
+        "baseEnumerationMaxPayout": 112.8,
+        "bonusEnumerationMaxPayoutCapped": 5000,
+        "bonusEnumerationMaxPayoutUncapped": 8232.8,
+        "bonusRtpPerSpinCapped": 12.153351084085603,
+        "bonusRtpPerSpinUncapped": 12.153375803831999,
+        "rtpRemovedPerBonusSpin": 0.000024719746395618358,
+        "maxBonusSpinsPerSession": 44,
+        "gameRtpRemovedByPerSpinCapUpperBound": 0.0000047903121331487224,
+        "sessionCapHitProbabilityByInitialSpins": {
+          "8": 3.884585327702576e-7,
+          "10": 5.150461185002907e-7,
+          "12": 6.565774363310482e-7,
+          "14": 8.148207014385086e-7
+        },
+        "issues": []
+      },
+      "profileIds": [
+        "GROOMERS-14"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-14",
+          "coverage": "full",
+          "note": "added 2026-09-26, FLAG-only (R2): the cap 5000× is read from the operator's published config (max_multiplier, the pinned data/raw/groomers-van-config-v1.4.json) and must be the one the enumerators apply (capped bonus 2^32 max_payout 5,000 ≤ cap; all 4 exact session artifacts max_win_x 5,000); all 6,225 served entries have total_multiplier ≤ 5,000 and credit ≤ 5,000 × stake, compared exactly as 18-dp decimals (largest served 630×), and all 53 bonus sessions' summed credits ≤ 5,000 × stake (largest 647.1×). RTP the cap removes, from the pinned capped vs uncapped 2^32 bonus enumerations: 12.153375804 − 12.153351084 = 2.472e-5 × stake per bonus spin (uncapped max 8,232.8×), at most P(trigger) × 44 spins × that = 4.79e-6 of whole-game RTP; the base enumeration maximum is 112.8×, so the cap never binds in the base game. The SESSION-level cap's removed return is not enumerated (no uncapped session convolution is pinned); its per-session hit probability from each capped convolution is printed (3.9e-7 … 8.1e-7). Measured 0 violations. FLAG probed (M34: one served multiplier forged to 5,001)"
+        }
+      ]
+    },
+    {
+      "step": 35,
+      "name": "Live-Sample Fit (informational, GROOMERS-22)",
+      "status": "PASS",
+      "detail": "the 5730 regular base spins' initial-deal symbol frequencies fit the published base-game reel weights on all 6 reels (χ², bins pooled to expected ≥ 5), and their hit rate and bonus-trigger rate fit the exact 2^32-enumeration probabilities (two-sided exact binomial); all 8 tests p ≥ 0.00125 (Bonferroni 0.01/8); informational — the distribution is proven by Steps 5, 16–17 and 29–32. Statistics in this step's data block.",
+      "data": {
+        "tests": 8,
+        "alpha": 0.00125,
+        "spins": 5730,
+        "reels": [
+          {
+            "reel": 0,
+            "cells": 28650,
+            "chi2": 8.808006703545317,
+            "df": 10,
+            "p": 0.5504163618302418
+          },
+          {
+            "reel": 1,
+            "cells": 28650,
+            "chi2": 13.059766340621572,
+            "df": 10,
+            "p": 0.2203493914195258
+          },
+          {
+            "reel": 2,
+            "cells": 28650,
+            "chi2": 5.321121138627367,
+            "df": 10,
+            "p": 0.8687208644778626
+          },
+          {
+            "reel": 3,
+            "cells": 28650,
+            "chi2": 5.322189028573238,
+            "df": 10,
+            "p": 0.8686429228541721
+          },
+          {
+            "reel": 4,
+            "cells": 28650,
+            "chi2": 3.6595211868748936,
+            "df": 10,
+            "p": 0.961402383483387
+          },
+          {
+            "reel": 5,
+            "cells": 28650,
+            "chi2": 4.744312920869726,
+            "df": 10,
+            "p": 0.9075907068098543
+          }
+        ],
+        "hitRate": {
+          "hits": 2619,
+          "n": 5730,
+          "exact": 0.4558327489066869,
+          "p": 0.8611847709132101
+        },
+        "triggerRate": {
+          "triggers": 33,
+          "n": 5730,
+          "exact": 0.004404200939461589,
+          "p": 0.15596001529897277
+        }
+      },
+      "profileIds": [
+        "GROOMERS-22"
+      ],
+      "profileChecks": [
+        {
+          "id": "GROOMERS-22",
+          "coverage": "full",
+          "note": "added 2026-09-26, informational (a deviation is INFO — reported, never counted, verdict unchanged; profile policy INFORMATIONAL, Mike 2026-09-29): the initial-deal symbol frequencies of the 5,730 regular base spins per reel against the published base-game reel weights (χ², bins pooled to expected ≥ 5), the hit rate against the base enumeration's exact win_rate and the trigger rate against the exact P(≥ 3 scatters) (two-sided exact binomial); 8 tests at Bonferroni 0.01/8. Measured: all 8 above the bound (smallest: trigger rate p = 0.156, 33 triggers vs 25.2 expected). INFO probed (M35: every initial-deal cell counted as the reel's first symbol)"
+        }
+      ]
     }
   ],
+  "profileCoverage": {
+    "game": "groomers-van",
+    "profileVersion": "1.0.2",
+    "notApplicable": [
+      {
+        "id": "GROOMERS-16",
+        "reason": "applies = { money.balanceField notNull } is false — declared null. The capture carries a `balance_type` field (an account-type code) but no balance amount; no consecutive-bet wallet delta can be reconciled. The per-spin credits are verified instead (Steps 7, 26)"
+      }
+    ],
+    "packageChecks": [
+      {
+        "id": "GROOMERS-09",
+        "artifact": "tests/groomers-van/GroomersVanTests.ts + src/operator-verifier.ts + src/rng.ts OPERATOR_SOURCE_CITES + Step 5 fourth leg",
+        "coverage": "full",
+        "note": "added 2026-09-26: Duel's own Groomer's Van Verify-tab code (\"Provably Fair Slots Verification (PCG32 PRNG)\"), pulled from duel.com/fairness/verify on 2026-05-19 (qa-workspace/duel/findings/duel-gv-verify-code.js, per verify-bets-tool-groomers-van.md), vendored byte for byte to evidence/verify-tab/ (SHA-256 20fefa7d…) and run UNMODIFIED by a pinned runner (JSON.parse of the captured literal, Node WebCrypto, temp files, 300 s hard timeout). (1) the 19th mocha test runs it on bet 1964586 and requires the outcome index and 30-cell grid; (2) Step 5 runs it on all 6,205 recomputable entries: outcome index and grid 6,205/6,205; (3) src/rng.ts cites 14 operator lines and checkOperatorCites FAILs any that does not carry its text; (4) since 2026-10-05 its multiplier values are scored: the code picks multiplierValues[rnd % length] and, as pulled, leaves the list empty (`const multiplierValues = null;`), so Step 5 gives it the published weights as a 200-entry list (each value repeated by its weight, config order; built from the pinned config and pinned by SHA-256 f07398af…) and requires every initial-grid multiplier value it returns to equal the served one: 335/335. Not compared: the list the live page injects (no copy of it is held). FAIL probed (captured file byte changed without re-pin; a citation moved; the 14 distinct values given instead of the weighted list)"
+      },
+      {
+        "id": "GROOMERS-23",
+        "artifact": "MANIFEST.md#verification-results",
+        "coverage": "full",
+        "note": "restated 2026-09-26 as the framework rows S5-1 … S5-8 between S5-MATRIX markers, each tied to a scored step or Not tested — disclosed; the package's own attack categories follow: 10 in the table (13 until the 4 Oct 2026 consolidation; the other three — multi-account treatment, cherry-picked seed selection, buy-spin grid content — are listed under it as acknowledged but not detectable; restated 19 Oct 2026, Mike's QA)"
+      },
+      {
+        "id": "GROOMERS-25",
+        "artifact": "MANIFEST.md#verify-a-bet",
+        "coverage": "full",
+        "note": "since 2026-09-26 the package carries an ordered six-step \"Verify one of your own spins\" (now MANIFEST \"Verify a bet\") paste-path in the declaration's field names (the Duel Dice DICE-25 pattern): (1) where the seed is revealed — seed rotation, then Duel's per-spin verify record; (2) which fields to paste — server_seed, activeAtSpin.server_seed_hashed, activeAtSpin.client_seed, activeAtSpin.nonce and round_index 0 for a base spin; for a free spin the verify record's nonce (the trigger's) and top-level round_index (1..N triggered, 0..N−1 bought; corrected 2026-10-04, and Step 5 checks this rule on all 475 free spins); and the served response.* fields; (3) the commitment encoding SHA-256(hex_decode(server_seed)); (4) the outcome-index derivation (client seed hex-encoded, first 4 bytes big-endian); (5) the cascade seed deriveTumbleSeed and PCG32 with SplitMix64 seeding and the weighted rejection draw; (6) the column-major grid numbering position = col × 5 + row and the pay rules"
+      },
+      {
+        "id": "GROOMERS-28",
+        "artifact": "package.json + tests/verify.ts + MANIFEST.md (Fresh-clone reproduction)",
+        "coverage": "full",
+        "note": "measured 2026-09-26, Node v22.23.1. Fresh `git clone` of origin/main @ 79aa65b (games/groomers-van at 8f13658): npm ci exit 0; npm test exit 0 — 18 passing, 32/33 + 1 capture-origin FLAG, Full Pass, REPRODUCED, verification-results byte-identical; npm run test:full exit 1 after 496 s — src/simulate.ts read the pinned 2^32 base enumeration from outputs/run/ instead of outputs/ and crashed (ENOENT) after Pass 1. FIXED this round (reads the committed copy) and test:full now field-diffs the regenerated simulation-results.json against the pin. Re-run on a copy of exactly the files this round will commit: npm ci exit 0; npm test exit 0 (REPRODUCED, byte-identical); npm run test:full exit 0 (502 s, and 497 s on the final copy with the Verify-tab leg) — simulation-results.json and rtp-convergence.html regenerated byte-identical to the pinned files. Engines node 22.x; audit ID PF-2026-DL10; 35 steps in README/MANIFEST (33 until Steps 34–35 were added later on 2026-09-26; the fresh-clone runs above predate them)"
+      },
+      {
+        "id": "GROOMERS-29",
+        "artifact": "tests/mutations.json + scripts/mutate.mjs",
+        "coverage": "full",
+        "note": "added 2026-09-26 (runner ported from Duel Video Poker via Beef): step-named mutations run in a disposable copy by `npm run mutate` (300 s hard timeout per run), each with the marker of the guard that must fire; includes forgeries that edit a pinned artifact AND re-pin it and site-verifier forgeries re-pinned. Measured 2026-10-05: see MANIFEST (48/48 killed, 35/35 scored steps covered, after M05k and the new M07b were added; 47/47 on 2026-10-04 after M05i/M05j; 45/45 on 2026-09-26 after Steps 34–35 and M16b/M34/M35 were added). No declared survivors"
+      },
+      {
+        "id": "GROOMERS-30",
+        "artifact": "MANIFEST.md#limitations-and-trust + MANIFEST.md#evidence",
+        "coverage": "full",
+        "note": "MANIFEST.md carries (since 2026-09-26) the declared-limitations register DL-1 … DL-9 and the Load-Bearing Premises table; MANIFEST Limitations and trust carries the R-* items. MANIFEST Evidence numbers every exhibit from E01 with its evidential role (completed 2026-09-26): E01 game UI, E02 client-seed origin, E03 the operator's written answers (\"Groomer's Van audit questions.pdf\", also D05; SHA-256 af9329dd…; held on file, not published), E04 Duel's Verify-tab code (20fefa7d…). The working notes are gitignored (.gitignore: working-notes/) and do not ship"
+      }
+    ]
+  },
   "summary": {
-    "passed": 33,
-    "flags": 0,
-    "failed": 0,
-    "info": 0,
+    "passed": 34,
+    "flags": 1,
+    "operatorFlags": 0,
+    "captureFlags": 1,
+    "hardFail": 0,
     "verdict": "PROVABLY FAIR — Full Pass"
   }
 }

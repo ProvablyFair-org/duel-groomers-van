@@ -3,9 +3,14 @@
  *
  * Validates the RNG core (HMAC → outcome_index → tumble_seed → PCG32 →
  * grid) against the operator's published verifier output for a single
- * known spin. Anchors the audit's algorithm claim — if any of these
+ * known spin, and (since 2026-10-04) two captured free spins, one from a
+ * triggered and one from a bought bonus. Anchors the audit's algorithm claim — if any of these
  * tests change in the future, src/rng.ts has drifted from the operator's
- * spec at https://duel.com/fairness/verify.
+ * published specification (config, /rules and help panel). Duel's Verify-tab
+ * code at https://duel.com/fairness/verify is run by the 19th test below and,
+ * on every recomputable entry, by Step 5; it takes its reel weights and its
+ * multiplier list as inputs, and given the published weights (the multiplier
+ * weights as a 200-entry list) it gives the served values.
  */
 
 import { strict as assert } from 'assert';
@@ -216,5 +221,79 @@ describe('End-to-end grid reproduction (against captured /verify spin)', () => {
     // With 11 symbols + per-reel skew the chance match rate is ~14%; any
     // tamper should knock at least half of the cells out of place.
     assert.ok(same < total * 0.6, `avalanche too weak: ${same}/${total} cells matched`);
+  });
+});
+
+describe("Operator source — Duel's own Verify-tab code (GROOMERS-09)", () => {
+  // evidence/verify-tab/duel-verify-tab-groomers-van-2026-05-19.captured.json, pinned and run unmodified by
+  // src/operator-verifier.ts (added 2026-09-26). Step 5 runs it on all 6,205 recomputable entries; this is the
+  // fixed-vector anchor: the operator's code must reproduce bet 1964586 exactly, and every src/rng.ts
+  // citation must carry its operator line.
+  it('reproduces bet 1964586 (outcome index + 30-cell grid) and every cited operator line holds', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { runOperatorVerifier, checkOperatorCites } = require('../../src/operator-verifier');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const cfg = require('../../data/raw/groomers-van-config-v1.4.json');
+    const run = runOperatorVerifier([{ id: 'k', serverSeed: KNOWN.serverSeed, clientSeed: KNOWN.clientSeed, nonce: KNOWN.nonce,
+      roundIndex: KNOWN.roundIndex, tumbleIndex: KNOWN.tumbleIndex, condition: 'base_game' }], {
+      reelConfigs: { base_game: cfg.weights.symbol_distributions_by_condition.base_game, bonus_game: cfg.weights.symbol_distributions_by_condition.bonus_game },
+      multiplierSymbolIndex: 10, multiplierValues: [],
+    });
+    assert.equal(run.error, null);
+    const r = run.results.get('k');
+    assert.equal(r.outcomeIndex, KNOWN.outcomeIndex);
+    assert.deepEqual(r.grid, KNOWN.expectedGrid);
+    assert.deepEqual(checkOperatorCites().bad, []);
+  });
+});
+
+describe('Free spins — known answers for a triggered and a bought bonus', () => {
+  // Added 2026-10-04. A free spin is drawn at the nonce of the spin that started the bonus (the trigger
+  // spin, or the buy) with the verify record's top-level round_index: 1..N in a triggered bonus (the
+  // trigger spin is round 0), 0..N-1 in a bought one (MANIFEST "Verify a bet", step 2). The seed panel's
+  // activeAtSpin.nonce during a bonus is already one higher. Values from the pinned dataset's verify records:
+  //   free spin 1966413 — first free spin of the bonus triggered by base spin 1966407 (Phase A)
+  //   free spin 1987729 — first free spin of the bonus bought by spin 1987724 (Phase C)
+  // Grids are column-major bonus_game symbol indices (10 = multiplier, 11 = bonus); multiplier positions are
+  // col × 5 + row.
+  const VECTORS = [
+    { spin: 1966413,
+      serverSeed: 'a6f8de3ed0adf0bbbc4d2c5af73041919868c4f786f572568787c792a2f5e029', clientSeed: 'pf_raPBrzfw4Gi48',
+      nonce: 40, roundIndex: 1, outcomeIndex: 848081699,
+      grid: [[0, 1, 2, 1, 3], [1, 3, 6, 7, 2], [2, 1, 4, 1, 1], [0, 6, 4, 1, 6], [0, 10, 6, 0, 0], [3, 0, 0, 7, 6]],
+      multipliers: [{ position: 21, value: 2 }],
+      // (41, 0) = activeAtSpin.nonce and a 0-based session index, the inputs the package documented until 2026-10-04.
+      mustNotReproduce: [[41, 0], [40, 0]] },
+    { spin: 1987729,
+      serverSeed: 'bd7c14095e8fc92a3c80212a1f0f8f7ac28bb0349c352c9156a6a24f0720db73', clientSeed: 'pf_scxjbJHFFF8jD',
+      nonce: 0, roundIndex: 0, outcomeIndex: 3332477434,
+      grid: [[2, 1, 8, 0, 0], [1, 0, 0, 1, 1], [1, 1, 5, 5, 1], [3, 0, 0, 9, 2], [3, 0, 7, 6, 1], [1, 1, 3, 3, 2]],
+      multipliers: [] as Array<{ position: number; value: number }>,
+      // (1, 0) = activeAtSpin.nonce and a 0-based session index.
+      mustNotReproduce: [[1, 0]] },
+  ];
+
+  it('reproduce outcome index, grid and multiplier values at (trigger nonce, round_index); the old documented inputs do not', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const cfg = require('../../data/raw/groomers-van-config-v1.4.json');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { loadPaytable } = require('../../src/paytable');
+    const pt = loadPaytable();
+    const sorted = [...cfg.weights.symbols_by_condition.bonus_game].sort((a: any, b: any) => a.symbol_index - b.symbol_index);
+    const bonusWeights: number[][] = Array.from({ length: 6 }, (_, reel) => sorted.map((s: any) => s.weights_per_reel[reel]));
+    const run = (v: typeof VECTORS[number], nonce: number, roundIndex: number) => reproduceSpin({
+      serverSeed: v.serverSeed, clientSeed: v.clientSeed, nonce, roundIndex, tumbleIndex: 0,
+      weightsPerReel: bonusWeights, multiplierSymbolIndex: pt.multiplierSymbolIndex,
+      multiplierValues: pt.multiplierValuesList, multiplierWeights: pt.multiplierWeightsList,
+    });
+    for (const v of VECTORS) {
+      const r = run(v, v.nonce, v.roundIndex);
+      assert.equal(r.outcomeIndex, v.outcomeIndex, `spin ${v.spin}: outcome index`);
+      assert.deepEqual(r.grid, v.grid, `spin ${v.spin}: grid`);
+      assert.deepEqual(r.multipliers, v.multipliers, `spin ${v.spin}: multiplier values`);
+      for (const [n, ri] of v.mustNotReproduce) {
+        assert.notDeepEqual(run(v, n, ri).grid, v.grid, `spin ${v.spin}: must not reproduce at nonce ${n}, round ${ri}`);
+      }
+    }
   });
 });
