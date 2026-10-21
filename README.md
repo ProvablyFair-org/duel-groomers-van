@@ -1,6 +1,6 @@
 # Duel Groomer's Van — Provably Fair Audit
 
-**Auditor:** [ProvablyFair.org](https://www.provablyfair.org) · **Audit ID:** PF-2026-DL10 · **Release:** `v1.1.0` · **Audit period:** 2026-05-04 – 2026-05-11
+**Auditor:** [ProvablyFair.org](https://www.provablyfair.org) · **Audit ID:** PF-2026-DL10 · **Release:** `v1.2.0` · **Audit period:** 2026-05-04 – 2026-05-11
 
 **Result: PROVABLY FAIR — Full Pass.** 34 of 35 scored verification steps pass against a 6,225-bet captured dataset; the 35th is one capture-origin flag (Step 4: four nonces the capture missed on a retried request, each under a revealed, commitment-checked seed; the rounds themselves were not captured; disclosed, verdict-neutral). Every recomputable initial grid (6,205 / 6,205) and every captured cascade round (4,323 / 4,323) reproduces byte-exact from the committed seeds. The cryptography, the cascade RNG, the paytable and the bonus mechanics are faithful to the operator's published config, rules and help panel.
 
@@ -11,7 +11,7 @@
 | Check | Captured evidence |
 |---|---|
 | Commitment chain | 116 / 116 revealed seeds hash to their commitment; 116 / 116 commitment links |
-| Initial grids | 6,205 / 6,205 non-buy entries reproduce 30/30 cells from (server_seed, client_seed, nonce) (Step 5) |
+| Initial grids | 6,205 / 6,205 non-buy entries reproduce 30/30 cells from (server_seed, client_seed, nonce) (Step 5). The RNG code (`src/rng.ts`) was rebuilt from a written specification ([docs/ALGORITHM.md](docs/ALGORITHM.md)) by an implementer who never opened Duel's code. No public page describes the per-spin seed step (seeds → outcome index → PCG32 state, and the discard rule of each draw), so that step of the specification was written from Duel's Verify-tab code, by the client's ruling, and the specification says so. Duel's published Verify-tab code is also run as a second check, not used as the source |
 | Cascade RNG | 4,323 / 4,323 cascades, 129,690 / 129,690 cells, 146 / 146 multiplier values byte-exact (Step 28) |
 | Payouts | 6,205 / 6,205 non-buy bets reconcile exactly in integer cents (Step 7); the coins field matches each bet's conversion rate on 6,225 / 6,225; 475 / 475 free spins (Step 26) |
 | Paytable | 4,985 / 4,985 payline multipliers match the published paytable (Step 8) |
@@ -19,7 +19,7 @@
 | Theoretical RTP | 99.9720% from the exact 2³² enumeration and exact session convolution, re-derived on every run (Step 32) |
 | Observed return | 56.87% base-game RTP over 5,730 captured base spins; reported separately from theoretical RTP |
 | Simulation | 30,000,000 Monte Carlo base spins (100.06% blended); Pass 2 aggregate z = +0.91σ and 4 / 115 forward-replay flags (binomial p = 0.83) |
-| Player verification | ProvablyFair.org site verifier on all 5,730 base spins; Duel's own Verify-tab code, given the published weights (the multiplier weights as a 200-entry list): outcome index and grid agree on all 6,205 recomputable entries, initial-grid multiplier values on 335 / 335 |
+| Player verification | ProvablyFair.org site verifier on all 5,730 base spins; Duel's own Verify-tab code (the second check), given the published weights (the multiplier weights as a 200-entry list): outcome index and grid agree on all 6,205 recomputable entries, initial-grid multiplier values on 335 / 335 |
 
 The declared limitations DL-1 … DL-9, the bounded-trust items (bought bonus spin, scaling-edge brackets, multi-account, seed selection) and the premises are kept in the [overview's limitations](MANIFEST.md#limitations-and-trust).
 
@@ -32,7 +32,7 @@ npm ci
 npm test
 ```
 
-Expected: **mocha 20 passing; 34 PASS + 1 capture-origin FLAG; zero hard fails; PROVABLY FAIR — Full Pass; REPRODUCED; exit 0.** `npm test` replays every captured spin and cascade and re-derives the headline RTP from the committed, pinned 2³² enumeration artifacts in seconds; it does not rerun the Monte Carlo or the enumeration. The exit code is the verdict: `0` PROVABLY FAIR — Full Pass · `2` PROVABLY FAIR — Conditional Pass · `5` RTP FIGURE OVERSTATED (the RTP-CLAIM rule 1.2.0 found a published RTP figure above the game's real RTP; the draws pass) · `1` NOT PROVABLY FAIR, or a reproduction difference.
+Expected: **mocha 21 passing; 34 PASS + 1 capture-origin FLAG; zero hard fails; PROVABLY FAIR — Full Pass; REPRODUCED; exit 0.** `npm test` replays every captured spin and cascade and re-derives the headline RTP from the committed, pinned 2³² enumeration artifacts in seconds; it does not rerun the Monte Carlo or the enumeration. The exit code is the verdict: `0` PROVABLY FAIR — Full Pass · `2` PROVABLY FAIR — Conditional Pass · `5` RTP FIGURE OVERSTATED (the RTP-CLAIM rule 1.2.0 found a published RTP figure above the game's real RTP; the draws pass) · `1` NOT PROVABLY FAIR, or a reproduction difference.
 
 **RTP claim (RTP-CLAIM 1.2.0, switched on).** The paid spin (base game and triggered bonus) is held to the flat 100% stated in Duel's game settings (`"rtp": "100.0000"` in the Groomer's Van game config v1.4). Scored on Step 32: PASS at 99.972000%, within the 0.1 pp band ([table](outputs/rtp-claim-table.json)).
 

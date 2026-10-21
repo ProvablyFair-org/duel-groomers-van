@@ -10,16 +10,21 @@
  *
  * The runner (verifier-parity/operator/run-operator-verifier.cjs) decodes the literal and runs the code
  * unedited under Node's WebCrypto; both files are pinned below and checked before it runs. Step 5 runs it on
- * every recomputable entry; src/rng.ts OPERATOR_SOURCE_CITES names the lines it ports.
+ * every recomputable entry.
  *
- * Ported from pf-duel-workspace/games/video-poker/src/operator-verifier.ts (2026-09-26).
+ * A SECOND CHECK, NOT THE SOURCE (20 Oct 2026). src/rng.ts is rebuilt from the written spec docs/ALGORITHM.md
+ * by an implementer who never opened this code (the spec's per-spin seed step was written from this code by the
+ * client's ruling of 20 Oct 2026, and the spec says so); this file runs Duel's code next to it as a second check.
+ * The line-citation table src/rng.ts used to carry (OPERATOR_SOURCE_CITES, the operator lines the earlier
+ * ported module copied) and its checker checkOperatorCites were removed with that module.
+ *
+ * Harness adapted from this workshop's video-poker src/operator-verifier.ts (2026-09-26).
  */
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { spawnSync } from 'child_process';
-import { OPERATOR_SOURCE_CITES } from './rng';
 
 export const PACKAGE_ROOT = path.join(__dirname, '..');
 export const OPERATOR_VERIFIER_FILE = 'evidence/verify-tab/duel-verify-tab-groomers-van-2026-05-19.captured.json';
@@ -125,18 +130,4 @@ export function runOperatorVerifier(rounds: OperatorRound[], settings: OperatorS
   } catch (e) {
     return { files, hashesMatch, results: null, logs: [], error: `operator verifier output unreadable: ${(e as Error).message}` };
   }
-}
-
-/** Every citation in src/rng.ts must quote, verbatim, the decoded operator code at the line it names. */
-export function checkOperatorCites(root = PACKAGE_ROOT): { checked: number; bad: string[] } {
-  const p = path.join(root, OPERATOR_VERIFIER_FILE);
-  if (!fs.existsSync(p)) return { checked: 0, bad: [`${OPERATOR_VERIFIER_FILE} not found`] };
-  let lines: string[];
-  try { lines = String(JSON.parse(fs.readFileSync(p, 'utf8'))).split('\n'); } catch { return { checked: 0, bad: ['operator file does not decode'] }; }
-  const bad: string[] = [];
-  for (const c of OPERATOR_SOURCE_CITES) {
-    const got = lines[c.line - 1] ?? '';
-    if (!got.includes(c.text)) bad.push(`L${c.line} does not contain ${JSON.stringify(c.text)} (has ${JSON.stringify(got.trim())})`);
-  }
-  return { checked: OPERATOR_SOURCE_CITES.length, bad };
 }

@@ -1,6 +1,6 @@
 {
   "name": "groomers-van-audit",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Provably fair audit \u2014 Duel.com Groomer's Van slot",
   "engines": {
     "node": "22.x"

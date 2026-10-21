@@ -19,9 +19,10 @@
  */
 
 import { step, type VerifyContext, type StepResult } from './context';
-import { computeOutcomeIndex, deriveTumbleSeed, Pcg32, generateGrid, generateMultipliers, REELS, ROWS, drawBiasBound } from '../../src/rng';
+import { computeOutcomeIndex, deriveTumbleSeed, Pcg32, generateGrid, generateMultipliers, REELS, ROWS } from '../../src/rng';
+import { drawBiasBound } from '../../src/bias';
 import { loadSiteVerifier, SITE_VERIFIER_PROVENANCE } from '../../src/site-verifier';
-import { runOperatorVerifier, checkOperatorCites, OPERATOR_EXPECTED_LOGS, operatorMultiplierList, OPERATOR_MULTIPLIER_LIST_SHA256, type OperatorRound } from '../../src/operator-verifier';
+import { runOperatorVerifier, OPERATOR_EXPECTED_LOGS, operatorMultiplierList, OPERATOR_MULTIPLIER_LIST_SHA256, type OperatorRound } from '../../src/operator-verifier';
 import * as crypto from 'crypto';
 
 /** The profile's ceiling on per-outcome draw bias (GROOMERS-08, rule R1): one part in 2^32. */
@@ -220,7 +221,7 @@ export function run(ctx: VerifyContext): StepResult[] {
     if (freeRuleChecked !== EXPECTED_FREE_SPIN_BETS) popIssues.push(`free-spin rule checked on ${freeRuleChecked} != ${EXPECTED_FREE_SPIN_BETS} free spins`);
     if (basePayloadChecked + freeRuleChecked !== EXPECTED_VERIFY_PAYLOAD_BETS) popIssues.push(`payload inputs checked on ${basePayloadChecked + freeRuleChecked} != ${EXPECTED_VERIFY_PAYLOAD_BETS} entries with a verify payload`);
     // ── Second leg: draw bias bound (GROOMERS-08, rule R1 — added 2026-09-26) ─────────────
-    // Measured from src/rng.ts acceptedDraw — the rule pickWeighted and generateMultipliers call —
+    // Measured (src/bias.ts) from src/rng.ts acceptedDraw — the rule pickWeighted and generateMultipliers call —
     // for every weight total the grid and bonus-multiplier draws use (6 base + 6 bonus reels, and
     // the multiplier-value weights). HARD FAIL unless every accepted window is a whole number of
     // totals (exact) and the worst per-residue bias is inside 2^-32.
@@ -272,11 +273,13 @@ export function run(ctx: VerifyContext): StepResult[] {
     }
 
     // ── Fourth leg: DUEL'S OWN Verify-tab code (GROOMERS-09 — added 2026-09-26) ─────────────
+    // A SECOND CHECK, NOT THE SOURCE (20 Oct 2026): src/rng.ts is rebuilt from docs/ALGORITHM.md by an
+    // implementer who never opened Duel's code; Duel's code is run next to it here.
     // evidence/verify-tab/duel-verify-tab-groomers-van-2026-05-19.captured.json (pulled from
     // duel.com/fairness/verify on 2026-05-19, pinned in src/operator-verifier.ts) is EXECUTED unmodified
     // on every entry recomputed above, at the same nonce and round index, with the operator config's
-    // reel distributions. Scored: its outcome index must equal src/rng.ts, its 30-cell initial grid must
-    // equal the served one, and the source lines src/rng.ts cites must carry their text. MULTIPLIER VALUES
+    // reel distributions. Scored: its outcome index must equal src/rng.ts and its 30-cell initial grid must
+    // equal the served one. MULTIPLIER VALUES
     // SCORED SINCE 2026-10-05: the code picks a value as multiplierValues[rnd % multiplierValues.length]
     // and, as pulled, leaves the list empty (`const multiplierValues = null;`), so it comes from outside the
     // code (seen supplied by Duel's Verify page on 2026-10-05; that check was not captured into this package). It is given the published
@@ -329,8 +332,6 @@ export function run(ctx: VerifyContext): StepResult[] {
       if (opMultAgree !== opMultChecked) popIssues.push(`operator multiplier values differ from the served ones on ${opMultChecked - opMultAgree} of ${opMultChecked}`);
     }
     for (const f of op.files) if (!f.match) popIssues.push(`${f.file}: ${f.actual ?? '(absent)'} != pinned ${f.pinned}`);
-    const cites = checkOperatorCites();
-    if (cites.bad.length) popIssues.push(`operator source citations broken: ${cites.bad.join('; ')}`);
 
     // ── Fifth leg: initial-grid bonus multiplier values (added 2026-09-26) ────────────────────
     // Step 28 replays the multiplier values of cascade FILLS; the values on each bonus spin's INITIAL
@@ -364,7 +365,7 @@ export function run(ctx: VerifyContext): StepResult[] {
       `Payload inputs: ${basePayloadOk}/${basePayloadChecked} base-spin verify payloads carry the served nonce; ${freeRuleOk}/${freeRuleChecked} free spins carry the trigger's served nonce and round_index = current_spin (triggered bonus) or current_spin − 1 (bought bonus). ` +
       `${mismatched} unverifiable. Skipped: ${skippedNoSeed} (seed not revealed / no grid), ${skippedPfSkipped} (pf_skipped=true, operator-disclosed cosmetic), ${skippedBuy} (buy spins — server-canned to guarantee scatters, not in published RNG).` +
       ` Draw bias (GROOMERS-08), measured from src/rng.ts acceptedDraw on all ${bb.rows.length} distinct weight totals the draws use: ${bb.inexact.length === 0 ? 'every accepted window is a whole number of totals' : `${bb.inexact.length} window(s) NOT a whole number of totals`}, worst bias ${bb.worstBias} (ceiling 2^-32).` +
-      ` Duel's own Verify-tab code (GROOMERS-09, pinned, pulled from duel.com/fairness/verify 2026-05-19) executed unmodified on ${opRun}/${EXPECTED_NON_BUY_BETS} entries: outcome index ${opOi} and 30-cell initial grid ${opGrid} agree; ${cites.checked - cites.bad.length}/${cites.checked} src/rng.ts citations carry their operator line; given the published multiplier weights as a ${opMultiplierList.length}-entry list (each value repeated by its weight, config order, pinned), its multiplier step gives ${opMultAgree}/${opMultChecked} served initial-grid multiplier values. Initial-grid bonus multiplier values recomputed by src/rng.ts with the config's weights: ${initMultAgree}/${initMultChecked} equal the served ones.` +
+      ` Duel's own Verify-tab code (GROOMERS-09, pinned, pulled from duel.com/fairness/verify 2026-05-19), run as a second check (src/rng.ts is rebuilt from docs/ALGORITHM.md by an implementer who never opened this code), executed unmodified on ${opRun}/${EXPECTED_NON_BUY_BETS} entries: outcome index ${opOi} and 30-cell initial grid ${opGrid} agree; given the published multiplier weights as a ${opMultiplierList.length}-entry list (each value repeated by its weight, config order, pinned), its multiplier step gives ${opMultAgree}/${opMultChecked} served initial-grid multiplier values. Initial-grid bonus multiplier values recomputed by src/rng.ts with the config's weights: ${initMultAgree}/${initMultChecked} equal the served ones.` +
       ` Player-verifier parity (GROOMERS-24): the ProvablyFair.org docs-site derive.js + paytables.js (pinned, ${SITE_VERIFIER_PROVENANCE.ref} @ ${SITE_VERIFIER_PROVENANCE.head.slice(0, 7)}) executed on ${siteCompared}/${EXPECTED_MODE_BETS.spin} base spins at the matched nonce: outcome_index ${siteOi}, trigger flag ${siteTrig}, base-spin stake multiple ${sitePay} agree (relative bound ${SITE_REL_TOL.toExponential(0)}; free-spin sessions and buys not compared).` +
       (popIssues.length ? ` POPULATION: ${popIssues.join('; ')}.` : '') +
       (fails.length ? ` Examples: ${fails.join(' | ')}` : ''),
@@ -372,7 +373,7 @@ export function run(ctx: VerifyContext): StepResult[] {
         payloadInputs: { basePayloadChecked, basePayloadOk, freeRuleChecked, freeRuleOk },
         skippedNoSeed, skippedPfSkipped, skippedBuy, populationIssues: popIssues,
         drawBias: { ceiling: BIAS_CEILING, ...bb },
-        operatorVerifier: { files: op.files, ran: opRun, outcomeIndexAgree: opOi, gridAgree: opGrid, citations: cites.checked, citationsBad: cites.bad, multiplierList: { entries: opMultiplierList.length, sha256: opMultiplierListSha, pinned: OPERATOR_MULTIPLIER_LIST_SHA256 }, multipliersChecked: opMultChecked, multipliersAgree: opMultAgree, logs: op.logs },
+        operatorVerifier: { files: op.files, ran: opRun, outcomeIndexAgree: opOi, gridAgree: opGrid, multiplierList: { entries: opMultiplierList.length, sha256: opMultiplierListSha, pinned: OPERATOR_MULTIPLIER_LIST_SHA256 }, multipliersChecked: opMultChecked, multipliersAgree: opMultAgree, logs: op.logs },
         initialGridMultipliers: { checked: initMultChecked, agree: initMultAgree },
         siteVerifier: { provenance: SITE_VERIFIER_PROVENANCE, files: sv.files, compared: siteCompared, outcomeIndexAgree: siteOi,
           triggerAgree: siteTrig, stakeMultipleAgree: sitePay, relTol: SITE_REL_TOL, worstRelativeDeviation: siteWorst } },

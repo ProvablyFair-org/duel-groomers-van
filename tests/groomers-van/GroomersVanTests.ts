@@ -5,12 +5,14 @@
  * grid) against the operator's published verifier output for a single
  * known spin, and (since 2026-10-04) two captured free spins, one from a
  * triggered and one from a bought bonus. Anchors the audit's algorithm claim — if any of these
- * tests change in the future, src/rng.ts has drifted from the operator's
- * published specification (config, /rules and help panel). Duel's Verify-tab
- * code at https://duel.com/fairness/verify is run by the 19th test below and,
- * on every recomputable entry, by Step 5; it takes its reel weights and its
- * multiplier list as inputs, and given the published weights (the multiplier
- * weights as a 200-entry list) it gives the served values.
+ * tests change in the future, src/rng.ts has drifted from the served outcomes.
+ * src/rng.ts is rebuilt from the written spec docs/ALGORITHM.md (20 Oct 2026) by an
+ * implementer who never opened Duel's code; its spec self-test is RngSpecTests.ts.
+ * Duel's Verify-tab code at https://duel.com/fairness/verify is run as a second
+ * check, not used as the source: by the 19th test below and, on every
+ * recomputable entry, by Step 5; it takes its reel weights and its multiplier
+ * list as inputs, and given the published weights (the multiplier weights as a
+ * 200-entry list) it gives the served values.
  */
 
 import { strict as assert } from 'assert';
@@ -224,14 +226,15 @@ describe('End-to-end grid reproduction (against captured /verify spin)', () => {
   });
 });
 
-describe("Operator source — Duel's own Verify-tab code (GROOMERS-09)", () => {
+describe("Second check — Duel's own Verify-tab code (GROOMERS-09)", () => {
   // evidence/verify-tab/duel-verify-tab-groomers-van-2026-05-19.captured.json, pinned and run unmodified by
   // src/operator-verifier.ts (added 2026-09-26). Step 5 runs it on all 6,205 recomputable entries; this is the
-  // fixed-vector anchor: the operator's code must reproduce bet 1964586 exactly, and every src/rng.ts
-  // citation must carry its operator line.
-  it('reproduces bet 1964586 (outcome index + 30-cell grid) and every cited operator line holds', () => {
+  // fixed-vector anchor: the operator's code must reproduce bet 1964586 exactly. It is a second check next to
+  // src/rng.ts (rebuilt from docs/ALGORITHM.md), not its source; the citation table of the earlier ported
+  // module was removed on 20 Oct 2026.
+  it('reproduces bet 1964586 (outcome index + 30-cell grid)', () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { runOperatorVerifier, checkOperatorCites } = require('../../src/operator-verifier');
+    const { runOperatorVerifier } = require('../../src/operator-verifier');
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const cfg = require('../../data/raw/groomers-van-config-v1.4.json');
     const run = runOperatorVerifier([{ id: 'k', serverSeed: KNOWN.serverSeed, clientSeed: KNOWN.clientSeed, nonce: KNOWN.nonce,
@@ -243,7 +246,6 @@ describe("Operator source — Duel's own Verify-tab code (GROOMERS-09)", () => {
     const r = run.results.get('k');
     assert.equal(r.outcomeIndex, KNOWN.outcomeIndex);
     assert.deepEqual(r.grid, KNOWN.expectedGrid);
-    assert.deepEqual(checkOperatorCites().bad, []);
   });
 });
 

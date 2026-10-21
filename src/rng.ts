@@ -1,287 +1,196 @@
 /**
- * Groomer's Van — RNG core.
+ * PROVENANCE (header added on integration, 20 Oct 2026; everything below this comment is the
+ * clean-room module byte for byte).
  *
- * Ported to TypeScript from Duel's published Verify-tab code at
- * https://duel.com/fairness/verify (Game selector → "Groomer's Van"):
- * it was written from a verbatim copy of that code taken on 2026-05-08
- * (kept in the auditor's working notes, which do not ship), and the
- * operator lines it ports are cited below (OPERATOR_SOURCE_CITES) against
- * the copy vendored on 2026-05-19 under evidence/verify-tab/. It is not an
- * independent, spec-only rewrite; Step 5 also runs Duel's code unmodified
- * as a cross-check.
+ * This module was REBUILT FROM A WRITTEN SPECIFICATION, not ported from Duel's code:
+ *   spec      docs/ALGORITHM.md, a copy of games/groomers-van/ALGORITHM.md in the ProvablyFair.org
+ *             audit framework (pf-audit, branch clean-room-spec-2026-10-20). This module was written
+ *             from commit ef7fa03; the copy in docs/ is commit cae1782, which changes only the text
+ *             of open point O5 and one line of 2.6 (nonce gaps), nothing this module reads. Its
+ *             inputs, commitment, grid, weight tables, fill order, multiplier values and tumbles come
+ *             from Duel's public pages, its public Verify form used as a black box, the public config
+ *             and rules endpoints and the captured data. One
+ *             step is different, and the spec says so in its Provenance section: no public page
+ *             describes the per-spin seed step (seeds -> outcome_index, outcome_index + round +
+ *             tumble -> PCG32 state, and the discard rule of each draw, spec 2.2, 2.4a, 2.4b), so
+ *             by the client's ruling of 20 Oct 2026 that step of the spec was written from Duel's
+ *             Verify-tab code, restated in the spec's own words, and disclosed.
+ *   rebuild   written by an implementer who read ONLY that spec and a module-interface file, and
+ *             never opened Duel's code, its Verify-tab file, or this package's earlier src/rng.ts.
+ *   self-test tests/groomers-van/RngSpecTests.ts (the spec's vectors and properties).
  *
- * Pipeline (per spin):
- *   1. outcome_index = first 4 bytes BE of
- *        HMAC-SHA256(hex_decode(server_seed),
- *                    bytesToHex(client_seed) + ":" + nonce)
- *      — the client seed is HEX-ENCODED before going into the message,
- *      and there is no `:cursor` suffix (different from keno/dice/bj).
+ * Duel's published Verify-tab code (evidence/verify-tab/duel-verify-tab-groomers-van-2026-05-19
+ * .captured.json, E04) is NOT the source of this module. It is run byte for byte as a SECOND CHECK
+ * by Step 5 and the unit tests (src/operator-verifier.ts), next to the ProvablyFair.org docs-site
+ * verifier copy (src/site-verifier.ts).
  *
- *   2. tumble_seed = mix(outcome_index, round_index, tumble_index)
- *      using xorshift+imul (Murmur3 finalise variant).
- *
- *   3. PCG32 PRNG seeded with tumble_seed (SplitMix64 expansion).
- *
- *   4. grid[col][row] (column-major) = rejection-sampled symbol from
- *      that reel's weighted distribution.
- *
- *   5. multiplier values (bonus only) for each cell whose symbol is
- *      `multiplier`: rejection-sampled from `multiplier_values` array.
- *
- * The capture's per-spin /verify response includes outcome_index,
- * server_seed, server_seed_hash, and the 30-cell grid; this module is
- * what re-derives the grid byte-for-byte from the seed inputs.
+ * Three-way agreement measured on integration (20 Oct 2026; the four redacted datasets in data/ of
+ * the workshop: 6,250 records, 6,228 spins and free spins, 10,573 rounds): this module vs the live
+ * rounds, every round's 30 cells and every multiplier value 10,573/10,573 (317,190 cells, 945
+ * values), outcome_index 623/623, commitments 6,250/6,250; vs Duel's Verify-tab code
+ * 10,573/10,573 rounds (outcome index, fresh grid, multiplier values); vs the docs-site verifier
+ * copy 10,573/10,573. Step 5 of `npm run verify` re-measures the live and Verify-tab legs on the
+ * pinned dataset on every run.
  */
+// Groomer's Van RNG, clean-room implementation written from ALGORITHM.md and INTERFACE.md only.
+// Section references (§) point at ALGORITHM.md. Node `crypto` is the only dependency.
 
-import * as crypto from 'crypto';
+import { createHash, createHmac } from "crypto";
 
-/**
- * THE OPERATOR LINES THIS FILE PORTS (profile GROOMERS-09, 2026-09-26). Line numbers are of the DECODED
- * text of evidence/verify-tab/duel-verify-tab-groomers-van-2026-05-19.captured.json — Duel's own Verify-tab
- * code; src/operator-verifier.ts checkOperatorCites FAILs any citation whose line does not carry its text.
- */
-export const OPERATOR_SOURCE_CITES: ReadonlyArray<{ line: number; text: string; ports: string }> = Object.freeze([
-  { line: 51,  text: 'const clientSeedHex = bytesToHex(encoder.encode(clientSeed));', ports: 'computeOutcomeIndex: client seed hex-encoded' },
-  { line: 52,  text: "const message = clientSeedHex + ':' + nonce;", ports: 'computeOutcomeIndex: message, no cursor' },
-  { line: 67,  text: 'return view.getUint32(0, false);', ports: 'computeOutcomeIndex: first 4 bytes big-endian' },
-  { line: 77,  text: 'x ^= Math.imul(roundIndex + 1, 0x9e3779b9) >>> 0;', ports: 'deriveTumbleSeed: round mix' },
-  { line: 80,  text: 'x ^= Math.imul(tumbleIndex + 1, 0x85ebca6b) >>> 0;', ports: 'deriveTumbleSeed: tumble mix' },
-  { line: 83,  text: 'x = Math.imul(x, 0xc2b2ae35) >>> 0;', ports: 'deriveTumbleSeed: finaliser' },
-  { line: 24,  text: 'this.increment = 0x5851f42d4c957f2dn;', ports: 'Pcg32: increment' },
-  { line: 28,  text: 'seed64 = (seed64 + 0x9e3779b97f4a7c15n) & 0xFFFFFFFFFFFFFFFFn;', ports: 'Pcg32: SplitMix64 step 1' },
-  { line: 38,  text: 'this.state = (oldState * 6364136223846793005n + this.increment) & 0xFFFFFFFFFFFFFFFFn;', ports: 'Pcg32.nextUint32: LCG step' },
-  { line: 43,  text: 'return ((xorShifted >>> rot) | (xorShifted << ((32 - rot) & 31))) >>> 0;', ports: 'Pcg32.nextUint32: XSH-RR output' },
-  { line: 109, text: 'const maxFair = MAX_UINT32 - (MAX_UINT32 % totalWeight);', ports: 'acceptedDraw: window' },
-  { line: 116, text: '} while (rnd >= maxFair);', ports: 'acceptedDraw: rejection' },
-  { line: 118, text: 'const pick = rnd % totalWeight;', ports: 'acceptedDraw: reduction' },
-  { line: 125, text: 'if (pick < cumulativeWeight) {', ports: 'indexFromPick: cumulative walk' },
-]);
+export const REELS: number = 6; // §2.1: 6 reels (columns)
+export const ROWS: number = 5; // §2.1: 5 rows, row 0 = top
 
-// ── HMAC + outcome_index ────────────────────────────────────────────────────
+export type SymbolGrid = number[][]; // grid[col][row]
+export interface PositionMultiplier { position: number; value: number }
+export interface SpinResult {
+  outcomeIndex: number;
+  outcomeIndexHex: string;
+  tumbleSeed: number;
+  grid: SymbolGrid;
+  multipliers: PositionMultiplier[];
+}
 
-/**
- * SHA-256 of the hex-decoded server seed bytes — i.e. the commitment hash
- * the casino pre-publishes before the seed is revealed.
- */
+const MASK64 = (1n << 64n) - 1n;
+const U32_MAX = 0xffffffff;
+
+// §2.4 / §2.4b: the multiplier value list the spec defines is the 200-entry list in which each
+// value appears as many times as its weight, values ascending.
+const SPEC_MULTIPLIER_TABLE: ReadonlyArray<readonly [number, number]> = [
+  [2, 90], [3, 25], [4, 18], [5, 13], [6, 10], [7, 8], [8, 7],
+  [10, 6], [12, 5], [15, 4], [25, 4], [50, 4], [100, 3], [250, 3],
+];
+const SPEC_MULTIPLIER_LIST: number[] = SPEC_MULTIPLIER_TABLE.flatMap(([v, w]) => Array<number>(w).fill(v));
+
+// Decode a hex string to bytes; both letter cases accepted (§2.2 step 1: case does not matter).
+// The spec only describes well-formed hex, so anything else is refused rather than guessed at.
+function hexToBytes(hex: string): Buffer {
+  if (hex.length % 2 !== 0 || !/^[0-9a-fA-F]*$/.test(hex)) {
+    throw new Error("server seed must be an even-length hex string");
+  }
+  return Buffer.from(hex, "hex");
+}
+
+function assertUint32(n: number, name: string): void {
+  if (!Number.isInteger(n) || n < 0 || n > U32_MAX) throw new Error(`${name} must be an unsigned 32-bit integer`);
+}
+
+function assertIndex(n: number, name: string): void {
+  if (!Number.isSafeInteger(n) || n < 0) throw new Error(`${name} must be a non-negative integer`);
+}
+
+// §1.2: the commitment is SHA-256 over the decoded seed bytes (not over its ASCII text), as lowercase hex.
 export function hashServerSeed(serverSeedHex: string): string {
-  return crypto.createHash('sha256').update(Buffer.from(serverSeedHex, 'hex')).digest('hex');
+  return createHash("sha256").update(hexToBytes(serverSeedHex)).digest("hex");
 }
 
-/**
- * outcome_index for one spin.
- *
- * Replicates the official verifier's Step 1:
- *   message = bytesToHex(utf8Bytes(clientSeed)) + ":" + nonce
- *   hmac    = HMAC-SHA256(hex_decode(serverSeed), message)
- *   return  hmac[0..4] read big-endian as uint32
- */
-export function computeOutcomeIndex(
-  serverSeedHex: string,
-  clientSeed: string,
-  nonce: number,
-): number {
-  const clientSeedHex = Buffer.from(clientSeed, 'utf-8').toString('hex');
-  const message       = `${clientSeedHex}:${nonce}`;
-  const key           = Buffer.from(serverSeedHex, 'hex');
-  const hmac          = crypto.createHmac('sha256', key).update(message).digest();
-  return hmac.readUInt32BE(0);
+// §2.2: outcome_index.
+export function computeOutcomeIndex(serverSeedHex: string, clientSeed: string, nonce: number): number {
+  assertIndex(nonce, "nonce");
+  // §2.2 step 1: the HMAC key is the server seed decoded from hex.
+  const key = hexToBytes(serverSeedHex);
+  // §2.2 step 2: the client seed's UTF-8 bytes, each written as two lowercase hex digits.
+  const clientPart = Buffer.from(clientSeed, "utf8").toString("hex");
+  // §2.2 step 3: that hex text, a colon, then the nonce in plain decimal; ASCII message.
+  const message = `${clientPart}:${nonce.toString(10)}`;
+  // §2.2 step 4: HMAC-SHA256 with the key over the message.
+  const digest = createHmac("sha256", key).update(message, "ascii").digest();
+  // §2.2 step 5: first 4 digest bytes as an unsigned big-endian 32-bit integer.
+  return digest.readUInt32BE(0);
 }
 
-// ── tumble_seed mix ─────────────────────────────────────────────────────────
-
-const u32 = (x: number): number => x >>> 0;
-
-// JS `Math.imul` semantics — signed 32-bit multiply with low-32 truncation.
-// Node has Math.imul natively; we wrap for clarity.
-const imul = (a: number, b: number): number => Math.imul(a, b) >>> 0;
-
-/**
- * Derive the tumble seed by mixing outcome_index with the round index
- * (free-spin index inside a bonus session) and tumble index (cascade
- * depth inside a single spin).
- *
- * Both indices are 0-based; the +1 is in the original verifier source.
- */
-export function deriveTumbleSeed(
-  outcomeIndex: number,
-  roundIndex: number,
-  tumbleIndex: number,
-): number {
-  let x = u32(outcomeIndex);
-  x = u32(x ^ imul(roundIndex + 1, 0x9e3779b9));
-  x = u32(x ^ imul(tumbleIndex + 1, 0x85ebca6b));
-  x = u32(x ^ (x >>> 16));
-  x = imul(x, 0xc2b2ae35);
-  x = u32(x ^ (x >>> 16));
+// §2.4a "Tumble seed": mix outcome_index with round and tumble using 32-bit arithmetic.
+export function deriveTumbleSeed(outcomeIndex: number, roundIndex: number, tumbleIndex: number): number {
+  assertUint32(outcomeIndex, "outcomeIndex");
+  assertIndex(roundIndex, "roundIndex");
+  assertIndex(tumbleIndex, "tumbleIndex");
+  let x = outcomeIndex >>> 0;
+  // XOR in the low 32 bits of (r + 1) * 0x9E3779B9; Math.imul keeps exactly the low 32 bits.
+  x = (x ^ Math.imul((roundIndex + 1) >>> 0, 0x9e3779b9)) >>> 0;
+  // XOR in the low 32 bits of (t + 1) * 0x85EBCA6B.
+  x = (x ^ Math.imul((tumbleIndex + 1) >>> 0, 0x85ebca6b)) >>> 0;
+  // Final avalanche: xor-shift 16, multiply by 0xC2B2AE35 (low 32 bits), xor-shift 16.
+  x = (x ^ (x >>> 16)) >>> 0;
+  x = Math.imul(x, 0xc2b2ae35) >>> 0;
+  x = (x ^ (x >>> 16)) >>> 0;
   return x;
 }
 
-// ── PCG32 PRNG ──────────────────────────────────────────────────────────────
+// §2.4a "PCG32 step": multiplier and increment are the same 64-bit constant.
+const PCG_MULT = 0x5851f42d4c957f2dn; // 6364136223846793005
+const PCG_INC = 0x5851f42d4c957f2dn;
 
-const MASK64    = (1n << 64n) - 1n;
-const PCG_MULT  = 6364136223846793005n;
-const PCG_INC   = 0x5851f42d4c957f2dn;
-
-/**
- * PCG-XSH-RR 64/32 with SplitMix64 seed expansion.
- *
- * Matches the `Pcg32` class in the verifier source verbatim.
- */
 export class Pcg32 {
   state: bigint;
 
   constructor(seed32: number) {
-    let s = BigInt(u32(seed32));
-    s = (s + 0x9e3779b97f4a7c15n) & MASK64;
-    s = ((s ^ (s >> 30n)) * 0xbf58476d1ce4e5b9n) & MASK64;
-    s = ((s ^ (s >> 27n)) * 0x94d049bb133111ebn) & MASK64;
-    s ^= (s >> 31n);
-    this.state = s & MASK64;
+    assertUint32(seed32, "seed32");
+    // §2.4a "PCG32 state from the tumble seed": widen to 64 bits, then one SplitMix64 output step.
+    let z = (BigInt(seed32 >>> 0) + 0x9e3779b97f4a7c15n) & MASK64;
+    z = ((z ^ (z >> 30n)) * 0xbf58476d1ce4e5b9n) & MASK64;
+    z = ((z ^ (z >> 27n)) * 0x94d049bb133111ebn) & MASK64;
+    // No warm-up draw: the first output is produced from this state (§2.4a).
+    this.state = (z ^ (z >> 31n)) & MASK64;
   }
 
   nextUint32(): number {
-    const oldState = this.state;
-    this.state     = (oldState * PCG_MULT + PCG_INC) & MASK64;
-    const xorShifted = u32(Number(((oldState >> 18n) ^ oldState) >> 27n));
-    const rot        = Number(oldState >> 59n) & 31;
-    return u32((xorShifted >>> rot) | (xorShifted << ((32 - rot) & 31)));
+    const old = this.state;
+    // §2.4a: XSH-RR output from the current state ...
+    const xorshifted = Number((((old >> 18n) ^ old) >> 27n) & 0xffffffffn);
+    const rot = Number(old >> 59n);
+    const out = ((xorshifted >>> rot) | (xorshifted << ((32 - rot) & 31))) >>> 0;
+    // ... then advance: state = state * multiplier + increment (mod 2^64).
+    this.state = (old * PCG_MULT + PCG_INC) & MASK64;
+    return out;
   }
 }
 
-// ── Rejection-sampled weighted pick ─────────────────────────────────────────
-
-const MAX_UINT32 = 0xFFFFFFFF;
-
-/**
- * THE ACCEPTANCE RULE of every weighted draw (grid symbols and bonus multiplier values) — the one
- * place it lives since 2026-09-26, so the draw-bias bound (Step 5, profile GROOMERS-08) probes the
- * rule the recomputation actually runs. A PCG32 output v is accepted iff v < MAX − (MAX mod total),
- * and then reduced mod total; null = rejected, draw again.
- */
+// §2.4b: keep a draw only if it is below limit = (2^32 - 1) - ((2^32 - 1) mod T); a kept draw maps to u mod T.
 export function acceptedDraw(value: number, total: number): number | null {
-  const maxFair = MAX_UINT32 - (MAX_UINT32 % total);
-  return value < maxFair ? value % total : null;
+  assertUint32(value, "value");
+  if (!Number.isInteger(total) || total < 1 || total > U32_MAX) throw new Error("total must be an integer in [1, 2^32-1]");
+  const limit = U32_MAX - (U32_MAX % total);
+  return value < limit ? value % total : null;
 }
 
-/** Cumulative walk from a reduced draw to the weighted index (the operator verifier's pattern). */
-function indexFromPick(pick: number, weights: number[]): number {
-  let acc = 0;
-  for (let i = 0; i < weights.length; i++) {
-    acc += weights[i];
-    if (pick < acc) return i;
+// One draw below `total` per §2.4b: discard and draw again until a value is kept.
+function drawBelow(prng: Pcg32, total: number): number {
+  for (;;) {
+    const r = acceptedDraw(prng.nextUint32(), total);
+    if (r !== null) return r;
   }
-  // Unreachable when weights[] is well-formed (acc reaches total exactly).
-  throw new Error('pickWeighted: cumulative weights did not cover total');
 }
 
-/**
- * Sample one symbol index from a weighted distribution, drawing uint32s
- * from `prng` until a bias-free value is found.
- */
+// §2.4b "Symbols": T = sum of the weights; the result picks the first index whose running sum exceeds it.
 export function pickWeighted(prng: Pcg32, weights: number[]): number {
-  const total = weights.reduce((s, w) => s + w, 0);
-  let pick: number | null;
-  do {
-    pick = acceptedDraw(prng.nextUint32(), total);
-  } while (pick === null);
-  return indexFromPick(pick, weights);
-}
-
-/** One weight total's row of the draw-bias bound. */
-export interface TotalBias {
-  total: number;
-  /** Accepted window's exclusive end, MEASURED from acceptedDraw by binary search. */
-  acceptedWindow: number;
-  remainder: number;
-  perResidue: number;
-  /** max over residues r of |P(r) − 1/total|; 0 when the window is a whole number of totals. */
-  bias: number;
-  predicateProbeFailures: number;
-  exact: boolean;
-}
-
-/**
- * THE DRAW BIAS BOUND (profile GROOMERS-08, added 2026-09-26; same method as Duel Mines/Beef
- * drawBiasBound). For each weight total the draws use, the accepted window is located by binary search
- * on acceptedDraw and ~600 probes confirm it IS "v < window ? v mod total : null". Exactly uniform on
- * the residues iff the window is a whole number of totals — then each symbol's probability is its
- * weight / total exactly, given a uniform 32-bit source.
- */
-export function drawBiasBound(totals: number[]): { rows: TotalBias[]; worstBias: number; inexact: number[] } {
-  const domain = MAX_UINT32 + 1;
-  const rows: TotalBias[] = [];
-  for (const total of [...new Set(totals)].sort((a, b) => a - b)) {
-    let lo = 0, hi = domain;
-    if (acceptedDraw(0, total) === null) hi = 0;
-    while (hi - lo > 1) {
-      const mid = Math.floor((lo + hi) / 2);
-      if (acceptedDraw(mid, total) !== null) lo = mid; else hi = mid;
-    }
-    const W = hi === 0 ? 0 : (acceptedDraw(lo, total) !== null ? lo + 1 : lo);
-    const probes = new Set<number>();
-    for (let d = 0; d < 100; d++) {
-      probes.add(d); probes.add(MAX_UINT32 - d);
-      if (W - 1 - d >= 0) probes.add(W - 1 - d);
-      if (W + d <= MAX_UINT32) probes.add(W + d);
-    }
-    for (let k = 0; k < 200; k++) probes.add(Math.floor(k * (domain / 200)) + (k % total));
-    let predicateProbeFailures = 0;
-    for (const v of probes) {
-      if (v < 0 || v > MAX_UINT32) continue;
-      if (acceptedDraw(v, total) !== (v < W ? v % total : null)) predicateProbeFailures++;
-    }
-    const remainder = W % total;
-    const perResidue = Math.floor(W / total);
-    const maxC = remainder === 0 ? perResidue : perResidue + 1;
-    const bias = W === 0 ? 1 : Math.max(maxC * total - W, W - perResidue * total) / (W * total);
-    rows.push({ total, acceptedWindow: W, remainder, perResidue, bias, predicateProbeFailures,
-      exact: remainder === 0 && W > 0 && predicateProbeFailures === 0 });
+  if (weights.length === 0) throw new Error("weights must not be empty");
+  let total = 0;
+  for (const w of weights) {
+    if (!Number.isInteger(w) || w < 0) throw new Error("weights must be non-negative integers");
+    total += w;
   }
-  return { rows, worstBias: Math.max(...rows.map(r => r.bias)), inexact: rows.filter(r => !r.exact).map(r => r.total) };
+  const v = drawBelow(prng, total);
+  let running = 0;
+  for (let i = 0; i < weights.length; i++) {
+    running += weights[i];
+    if (v < running) return i;
+  }
+  throw new Error("unreachable: draw outside the weight total");
 }
 
-// ── Grid generation ─────────────────────────────────────────────────────────
-
-export const REELS = 6;  // columns
-export const ROWS  = 5;
-
-export type SymbolGrid = number[][];   // grid[col][row] = symbol index 0..K-1
-
-/**
- * Generate the column-major grid for one tumble round.
- *
- * `weightsPerReel` is `weights[col][symbolIndex]` — the per-reel
- * weights for whichever condition (base_game or bonus_game) applies
- * to this spin.
- */
+// §2.4 box + §2.4b: fresh 30-cell grid, positions 0..29 in column-major order (reel = p div 5, top row first),
+// each cell one weighted draw from its reel's table.
 export function generateGrid(prng: Pcg32, weightsPerReel: number[][]): SymbolGrid {
+  if (weightsPerReel.length !== REELS) throw new Error(`weightsPerReel must have ${REELS} reels`);
   const grid: SymbolGrid = [];
   for (let col = 0; col < REELS; col++) {
-    const reel: number[] = [];
-    const weights = weightsPerReel[col];
-    for (let row = 0; row < ROWS; row++) {
-      reel.push(pickWeighted(prng, weights));
-    }
-    grid.push(reel);
+    const column: number[] = [];
+    for (let row = 0; row < ROWS; row++) column.push(pickWeighted(prng, weightsPerReel[col]));
+    grid.push(column);
   }
   return grid;
 }
 
-// ── Multiplier-symbol values (bonus only) ───────────────────────────────────
-
-export interface PositionMultiplier {
-  position: number;   // column-major: col * ROWS + row
-  value:    number;   // multiplier (e.g. 2, 3, 5, 250, …)
-}
-
-/**
- * For each cell whose symbol index equals `multiplierSymbolIndex`,
- * draw the next PCG32 uint32 (with rejection) and pick from
- * `multiplierValues`.
- *
- * The PRNG state is shared with `generateGrid` — multiplier values
- * consume from the same stream after the grid is fully drawn.
- */
+// §2.4b "Multiplier values": after the 30 cells, one draw per multiplier cell, in position order, from the same stream.
 export function generateMultipliers(
   grid: SymbolGrid,
   prng: Pcg32,
@@ -289,71 +198,46 @@ export function generateMultipliers(
   multiplierValues: number[],
   multiplierWeights?: number[],
 ): PositionMultiplier[] {
-  if (multiplierSymbolIndex == null || multiplierValues.length === 0) return [];
+  if (multiplierValues.length === 0) throw new Error("multiplierValues must not be empty");
+  if (multiplierWeights !== undefined && multiplierWeights.length !== multiplierValues.length) {
+    throw new Error("multiplierWeights must match multiplierValues in length");
+  }
   const out: PositionMultiplier[] = [];
-  // Weighted sampling per the operator's published `multiplier_values`
-  // distribution (e.g. 2× weight 90, 3× weight 25, …, 250× weight 3).
-  // Uniform sampling would inflate the expected multiplier value by ~3×
-  // and was the structural cause of the 21pp blended-RTP overestimate.
-  const weights = multiplierWeights ?? new Array(multiplierValues.length).fill(1);
-  const totalWeight = weights.reduce((a, b) => a + b, 0);
   for (let col = 0; col < REELS; col++) {
     for (let row = 0; row < ROWS; row++) {
-      if (grid[col][row] === multiplierSymbolIndex) {
-        let pick: number | null;
-        do {
-          pick = acceptedDraw(prng.nextUint32(), totalWeight);
-        } while (pick === null);
-        // Cumulative-accumulator walker — matches the operator's published
-        // verifier code exactly (same pattern as Step 4 grid generation).
-        const chosen = indexFromPick(pick, weights);
-        out.push({ position: col * ROWS + row, value: multiplierValues[chosen] });
-      }
+      if (grid[col][row] !== multiplierSymbolIndex) continue;
+      // Spec form: T = list length, value = list[index]. With weights, the same §2.4b weighted pick over the
+      // distinct values (equal to the §2.4 cumulative rule when the weights are those of §2.4).
+      const idx = multiplierWeights !== undefined
+        ? pickWeighted(prng, multiplierWeights)
+        : drawBelow(prng, multiplierValues.length);
+      out.push({ position: col * ROWS + row, value: multiplierValues[idx] });
     }
   }
   return out;
 }
 
-// ── End-to-end one-call helper ──────────────────────────────────────────────
-
-export interface SpinResult {
-  outcomeIndex:    number;
-  outcomeIndexHex: string;
-  tumbleSeed:      number;
-  grid:            SymbolGrid;            // grid[col][row] = symbol index
-  multipliers:     PositionMultiplier[];  // empty for base_game
-}
-
-/**
- * One full re-derivation: (server_seed, client_seed, nonce, round_index,
- * tumble_index) → grid + multipliers.
- *
- * `weightsPerReel` and `multiplierSymbolIndex`/`multiplierValues` are
- * looked up from `/api/v2/slots` (`weights.symbols_by_condition.<base|bonus>_game`
- * and `symbols.multiplier.symbol_index` / `features[].metadata.multiplier_values`).
- */
+// End to end for one (round, tumble): §2.2 -> §2.4a -> §2.4/§2.4b. Returns the fresh grid G_t; applying it to a
+// tumble (gravity, refilling only the emptied top cells, §2.4 bullet 1) is the caller's job.
 export function reproduceSpin(args: {
-  serverSeed:            string;
-  clientSeed:            string;
-  nonce:                 number;
-  roundIndex:            number;
-  tumbleIndex:           number;
-  weightsPerReel:        number[][];
-  multiplierSymbolIndex?: number | null;
-  multiplierValues?:     number[] | null;
-  multiplierWeights?:    number[] | null;
+  serverSeed: string; clientSeed: string; nonce: number; roundIndex: number; tumbleIndex: number;
+  weightsPerReel: number[][]; multiplierSymbolIndex?: number | null; multiplierValues?: number[] | null;
+  multiplierWeights?: number[] | null;
 }): SpinResult {
   const outcomeIndex = computeOutcomeIndex(args.serverSeed, args.clientSeed, args.nonce);
-  const tumbleSeed   = deriveTumbleSeed(outcomeIndex, args.roundIndex, args.tumbleIndex);
-  const prng         = new Pcg32(tumbleSeed);
-  const grid         = generateGrid(prng, args.weightsPerReel);
-  const multipliers  =
-    args.multiplierSymbolIndex != null && args.multiplierValues && args.multiplierValues.length
-      ? generateMultipliers(grid, prng, args.multiplierSymbolIndex, args.multiplierValues, args.multiplierWeights ?? undefined)
-      : [];
+  const tumbleSeed = deriveTumbleSeed(outcomeIndex, args.roundIndex, args.tumbleIndex);
+  // §2.4a: one fresh stream per (round, tumble); nothing carries over.
+  const prng = new Pcg32(tumbleSeed);
+  const grid = generateGrid(prng, args.weightsPerReel);
+  let multipliers: PositionMultiplier[] = [];
+  if (args.multiplierSymbolIndex !== undefined && args.multiplierSymbolIndex !== null) {
+    const values = args.multiplierValues ?? SPEC_MULTIPLIER_LIST;
+    const weights = args.multiplierWeights ?? undefined;
+    multipliers = generateMultipliers(grid, prng, args.multiplierSymbolIndex, values, weights);
+  }
   return {
     outcomeIndex,
-    outcomeIndexHex: outcomeIndex.toString(16).padStart(8, '0'),
+    outcomeIndexHex: outcomeIndex.toString(16).padStart(8, "0"), // §2.2: format(outcome_index, '08x')
     tumbleSeed,
     grid,
     multipliers,

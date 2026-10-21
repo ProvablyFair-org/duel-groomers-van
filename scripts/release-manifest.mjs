@@ -28,12 +28,12 @@ const DECLARED = {
   auditId: 'PF-2026-DL10',
   game: 'groomers-van',
   casino: 'duel',
-  release: 'v1.1.0',
+  release: 'v1.2.0',
   framework: '1.1',
   environmentHost: 'duel.com',
   environmentStage: 'production',
   environmentQualifier: null,
-  supersedes: 'v1.0.0',
+  supersedes: 'v1.1.0',
   signature: 'SHA256:gEujiJm2pRyq7lQsfYQfQ1r97H/J7GdaKHbOW8GtikY',
   pending: '',
 };
@@ -99,7 +99,7 @@ function captureWindow(dataset) {
 /** The falsifiability battery. `mutations` is computed from the registry; the RUN RESULT is DECLARED
  * from the last completed `npm run mutate` (cite it in `source`) and must be refreshed by re-running
  * the battery — a generator never asserts a kill it did not run. null = not run for this manifest. */
-const FALSIFIABILITY_DECLARED = { killed: 52, scoredStepsCovered: '35/35', declaredSurvivors: 0, source: 'npm run mutate 2026-10-14 evening, the whole registry (52 entries) in one run on the tree carrying the FIXPASS2 C3 entries (Apple M2 Max, 12 cores, node v22.23.1): "52/52 mutations killed", "35/35 scored steps have a mutation that kills them"; 2026-10-15 --only M32, MC3: 5/5 killed, MC3a/MC3b exit 5' };
+const FALSIFIABILITY_DECLARED = { killed: 51, scoredStepsCovered: '35/35', declaredSurvivors: 0, source: 'npm run mutate 2026-10-20, the whole registry (51 entries; M05g retired with the src/rng.ts citation table, M05e retargeted to the clean-room acceptedDraw) in one run on the clean-room tree (Apple M2 Max, 12 cores, node v22.23.1): "51/51 mutations killed", "35/35 scored steps have a mutation that kills them"' };
 
 /** How long `npm test` takes, and on what — a property of the machine, so DECLARED from measured runs. */
 const RUNTIME = {

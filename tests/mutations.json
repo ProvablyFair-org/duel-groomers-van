@@ -100,10 +100,10 @@
   "name": "M05e the draw acceptance window widened",
   "step": 5,
   "expect": "NOT a whole number of totals",
-  "guard": "GROOMERS-08: the bias bound is measured from acceptedDraw.",
+  "guard": "GROOMERS-08: the bias bound is measured (src/bias.ts) from the clean module's acceptedDraw (src/rng.ts, rebuilt from docs/ALGORITHM.md; retargeted 20 Oct 2026 from the ported module's maxFair line).",
   "file": "src/rng.ts",
-  "find": "  return value < maxFair ? value % total : null;",
-  "replace": "  return value < MAX_UINT32 ? value % total : null;",
+  "find": "  return value < limit ? value % total : null;",
+  "replace": "  return value < U32_MAX ? value % total : null;",
   "runner": "verify"
  },
  {
@@ -114,16 +114,6 @@
   "file": "evidence/verify-tab/duel-verify-tab-groomers-van-2026-05-19.captured.json",
   "find": "// Provably Fair Slots Verification (PCG32 PRNG)",
   "replace": "// Provably Fair Slots Verification  (PCG32 PRNG)",
-  "runner": "verify"
- },
- {
-  "name": "M05g an operator source citation moved",
-  "step": 5,
-  "expect": "operator source citations broken",
-  "guard": "GROOMERS-09: every cited operator line must carry its text.",
-  "file": "src/rng.ts",
-  "find": "{ line: 51,  text: 'const clientSeedHex",
-  "replace": "{ line: 50,  text: 'const clientSeedHex",
   "runner": "verify"
  },
  {

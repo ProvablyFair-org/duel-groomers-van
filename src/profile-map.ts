@@ -56,7 +56,7 @@ export const STEP_CLAIMS: Record<number, StepClaims> = {
         + 'triggered bonus, current_spin − 1 in a bought one (475/475). FAIL probed (one correction removed; the 1974625 '
         + 'correction removed; one free spin\'s current_spin moved by one)' },
     { id: 'GROOMERS-08', coverage: 'full',
-      note: 'added 2026-09-26 (R1): measured from src/rng.ts acceptedDraw — the one acceptance rule pickWeighted (grid) and '
+      note: 'added 2026-09-26 (R1): measured by src/bias.ts from src/rng.ts acceptedDraw — the one acceptance rule pickWeighted (grid) and '
         + 'generateMultipliers (bonus values) call since this change — on every distinct weight total the draws use (6 base '
         + 'reels, 6 bonus reels, the multiplier-value weights; binary search for the window + ~600 probes per total): every '
         + 'window is a whole number of totals, worst bias 0; HARD FAIL otherwise. The HMAC → outcome-index layer is covered by '
@@ -206,18 +206,17 @@ export const NOT_APPLICABLE: Array<{ id: string; reason: string }> = [
 ];
 
 export const PACKAGE_CHECKS: Array<{ id: string; artifact: string; coverage: Coverage | 'none'; note: string }> = [
-  { id: 'GROOMERS-09', artifact: 'tests/groomers-van/GroomersVanTests.ts + src/operator-verifier.ts + src/rng.ts OPERATOR_SOURCE_CITES + Step 5 fourth leg', coverage: 'full',
-    note: 'added 2026-09-26: Duel\'s own Groomer\'s Van Verify-tab code ("Provably Fair Slots Verification (PCG32 PRNG)"), pulled '
+  { id: 'GROOMERS-09', artifact: 'tests/groomers-van/GroomersVanTests.ts + src/operator-verifier.ts + Step 5 fourth leg', coverage: 'full',
+    note: 'added 2026-09-26; a second check since 20 Oct 2026, when src/rng.ts was rebuilt from the written spec docs/ALGORITHM.md by an implementer who never opened Duel\'s code (the spec\'s per-spin seed step was written from this code by the client\'s ruling of 20 Oct 2026, disclosed in the spec): Duel\'s own Groomer\'s Van Verify-tab code ("Provably Fair Slots Verification (PCG32 PRNG)"), pulled '
       + 'from duel.com/fairness/verify on 2026-05-19 (qa-workspace/duel/findings/duel-gv-verify-code.js, per '
       + 'verify-bets-tool-groomers-van.md), vendored byte for byte to evidence/verify-tab/ (SHA-256 20fefa7d…) and run UNMODIFIED '
       + 'by a pinned runner (JSON.parse of the captured literal, Node WebCrypto, temp files, 300 s hard timeout). (1) the 19th mocha '
       + 'test runs it on bet 1964586 and requires the outcome index and 30-cell grid; (2) Step 5 runs it on all 6,205 recomputable '
-      + 'entries: outcome index and grid 6,205/6,205; (3) src/rng.ts cites 14 operator lines and checkOperatorCites FAILs any that '
-      + 'does not carry its text; (4) since 2026-10-05 its multiplier values are scored: the code picks '
+      + 'entries: outcome index and grid 6,205/6,205; (3) since 2026-10-05 its multiplier values are scored: the code picks '
       + 'multiplierValues[rnd % length] and, as pulled, leaves the list empty (`const multiplierValues = null;`), so Step 5 '
       + 'gives it the published weights as a 200-entry list (each value repeated by its weight, config order; built from the '
       + 'pinned config and pinned by SHA-256 f07398af…) and requires every initial-grid multiplier value it returns to equal the '
-      + 'served one: 335/335. Not compared: the list the live page injects (no copy of it is held). FAIL probed (captured file byte changed without re-pin; a citation moved; the '
+      + 'served one: 335/335. Not compared: the list the live page injects (no copy of it is held). FAIL probed (captured file byte changed without re-pin; the '
       + '14 distinct values given instead of the weighted list)' },
   { id: 'GROOMERS-23', artifact: 'MANIFEST.md#verification-results', coverage: 'full',
     note: 'restated 2026-09-26 as the framework rows S5-1 … S5-8 between S5-MATRIX markers, each tied to a scored step or Not '

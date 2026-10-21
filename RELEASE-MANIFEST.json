@@ -2,7 +2,7 @@
   "auditId": "PF-2026-DL10",
   "game": "groomers-van",
   "casino": "duel",
-  "release": "v1.1.0",
+  "release": "v1.2.0",
   "framework": "1.1",
   "simulation": {
     "seeding": "pinned",
@@ -50,7 +50,7 @@
     "outputs/cpu-bonus-2pow32.json": "7f4b0f588723e48b8552e1dd240f1045a4df5144e4193736f3100faae8f8b086",
     "outputs/rtp-convergence.html": "89e63d82d12a212e63529066f92954c0421a494caf9d9759155aafa7becc8165",
     "outputs/simulation-results.json": "4becfea46f75bb5715343cfad9ee0de64f5438eb6823975c981c7facb930c8cf",
-    "outputs/verification-results.json": "ff90b08bb38fc8e789acfdad378a23c6592b34a7ba5a885be31d77cc1d13c734",
+    "outputs/verification-results.json": "629a057e617e6f8c68b184d138442e71238170f15e97b9771869fae297fcefcd",
     "outputs/rtp-claim-table.json": "58de71cb6dc34e2e758bcc5596813a459cad8657c5c3d7b8a4b584b92895588a"
   },
   "verdict": "PROVABLY FAIR — Full Pass",
@@ -71,16 +71,16 @@
     "stage": "production",
     "qualifier": null
   },
-  "supersedes": "v1.0.0",
+  "supersedes": "v1.1.0",
   "signature": "SHA256:gEujiJm2pRyq7lQsfYQfQ1r97H/J7GdaKHbOW8GtikY",
   "falsifiability": {
     "registry": "tests/mutations.json",
     "runner": "scripts/mutate.mjs",
-    "mutations": 52,
-    "killed": 52,
+    "mutations": 51,
+    "killed": 51,
     "scoredStepsCovered": "35/35",
     "declaredSurvivors": 0,
-    "source": "npm run mutate 2026-10-14 evening, the whole registry (52 entries) in one run on the tree carrying the FIXPASS2 C3 entries (Apple M2 Max, 12 cores, node v22.23.1): \"52/52 mutations killed\", \"35/35 scored steps have a mutation that kills them\"; 2026-10-15 --only M32, MC3: 5/5 killed, MC3a/MC3b exit 5"
+    "source": "npm run mutate 2026-10-20, the whole registry (51 entries; M05g retired with the src/rng.ts citation table, M05e retargeted to the clean-room acceptedDraw) in one run on the clean-room tree (Apple M2 Max, 12 cores, node v22.23.1): \"51/51 mutations killed\", \"35/35 scored steps have a mutation that kills them\""
   },
   "pending": ""
 }
