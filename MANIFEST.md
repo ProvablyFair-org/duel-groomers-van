@@ -1,6 +1,6 @@
 # Duel Groomer's Van — Consolidated Audit Overview
 
-**Audit ID:** PF-2026-DL10 · **Auditor:** ProvablyFair.org · **Release:** `v1.2.0` · **Framework:** 1.1
+**Audit ID:** PF-2026-DL10 · **Auditor:** ProvablyFair.org · **Release:** `v1.2.1` · **Framework:** 1.1
 
 Audit dates: 2026-05-04 – 2026-05-11 (capture and verification); enumeration artifacts 2026-05-23 – 2026-05-28. Publication date: 4 June 2026 (v1.0.0 public release). Audit report: https://audit.provablyfair.org/casino/duel/games/groomers-van/overview. Game type: slot (5×6 cluster pays, cascading tumbles, sticky tumble multipliers in the bonus, free-spin bonus with retriggers, bonus buy). Runtime: Node 22.x (`package.json` `engines`, `.nvmrc`). Each scored step carries the ProvablyFair.org Groomer's Van profile check(s) it implements (`src/profile-map.ts`, emitted as `profileIds` in `outputs/verification-results.json`); the profile is **1.0.2** (approved as cited, Methodology v1.1 decision D6, 14 October 2026). The machine-readable release identity is in [RELEASE-MANIFEST.json](RELEASE-MANIFEST.json).
 
@@ -599,6 +599,7 @@ The verdict rests on direct cryptographic checks (the seed chain, per-spin RNG o
 | `v1.0.0` | The original audit. | PROVABLY FAIR — Full Pass |
 | `v1.1.0` | Re-certification under Framework 1.1, October 2026, below. The dataset of record is unchanged. | unchanged |
 | `v1.2.0` | The RNG rebuilt from a written specification instead of ported from Duel's code; Duel's code kept as a second check. Below, "21 October 2026" and "20 October 2026". | unchanged |
+| `v1.2.1` | Errata: adds `.gitattributes` (`* -text`) so a Windows git clone keeps every file byte-identical; no audit content changed. | unchanged |
 
 ### 21 October 2026 — final QA corrections (v1.2.0)
 

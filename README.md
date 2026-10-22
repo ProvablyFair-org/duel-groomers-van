@@ -1,6 +1,6 @@
 # Duel Groomer's Van — Provably Fair Audit
 
-**Auditor:** [ProvablyFair.org](https://www.provablyfair.org) · **Audit ID:** PF-2026-DL10 · **Release:** `v1.2.0` · **Audit period:** 2026-05-04 – 2026-05-11
+**Auditor:** [ProvablyFair.org](https://www.provablyfair.org) · **Audit ID:** PF-2026-DL10 · **Release:** `v1.2.1` · **Audit period:** 2026-05-04 – 2026-05-11
 
 **Result: PROVABLY FAIR — Full Pass.** 34 of 35 scored verification steps pass against a 6,225-bet captured dataset; the 35th is one capture-origin flag (Step 4: four nonces the capture missed on a retried request, each under a revealed, commitment-checked seed; the rounds themselves were not captured; disclosed, verdict-neutral). Every recomputable initial grid (6,205 / 6,205) and every captured cascade round (4,323 / 4,323) reproduces byte-exact from the committed seeds. The cryptography, the cascade RNG, the paytable and the bonus mechanics are faithful to the operator's published config, rules and help panel.
 

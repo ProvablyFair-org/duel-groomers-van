@@ -2,7 +2,7 @@
   "auditId": "PF-2026-DL10",
   "game": "groomers-van",
   "casino": "duel",
-  "release": "v1.2.0",
+  "release": "v1.2.1",
   "framework": "1.1",
   "simulation": {
     "seeding": "pinned",
@@ -71,7 +71,7 @@
     "stage": "production",
     "qualifier": null
   },
-  "supersedes": "v1.1.0",
+  "supersedes": "v1.2.0",
   "signature": "SHA256:gEujiJm2pRyq7lQsfYQfQ1r97H/J7GdaKHbOW8GtikY",
   "falsifiability": {
     "registry": "tests/mutations.json",
